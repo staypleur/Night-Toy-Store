@@ -8,7 +8,13 @@ namespace NightToyStore
         static void Start()
         {
             if (Object.FindFirstObjectByType<PrototypePlayer>() != null) return;
-            bool networkScene = Object.FindFirstObjectByType<PrototypeSession>() != null;
+            var session = Object.FindFirstObjectByType<PrototypeSession>();
+            bool networkScene = session != null;
+            if(networkScene && session.UseProceduralStore)
+            {
+                new GameObject("Procedural store").AddComponent<ProceduralStore>();
+                return;
+            }
             if (!networkScene)
                 foreach (var camera in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None))
                     camera.gameObject.SetActive(false);

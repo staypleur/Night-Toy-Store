@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 5991491979731612819}
   - component: {fileID: 6852744381407787972}
   - component: {fileID: 9036914137951835925}
+  - component: {fileID: 465134502326271819}
   - component: {fileID: 8353835998569308022}
   - component: {fileID: 7012267131264557763}
   m_Layer: 0
@@ -184,6 +185,19 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.3
   m_Center: {x: 0, y: 0.3, z: 0}
+--- !u!114 &465134502326271819
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554808207598391085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99d027d315ad900418112c870f5c7fc0, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NightToyStore.NetworkStoreState
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &8353835998569308022
 MonoBehaviour:
   m_ObjectHideFlags: 0

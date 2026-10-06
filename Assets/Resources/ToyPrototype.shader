@@ -14,6 +14,7 @@ Shader "NightToyStore/PrototypeSurface"
             fixed4 _Color;
             float _EchoMode;
             float _TileFloor;
+            float _MapPreview;
             v2f vert(appdata_base v) {
                 v2f o; o.pos = UnityObjectToClipPos(v.vertex);
                 o.normal = UnityObjectToWorldNormal(v.normal);
@@ -22,10 +23,12 @@ Shader "NightToyStore/PrototypeSurface"
             fixed4 frag(v2f i) : SV_Target {
                 if (_EchoMode > .5) discard;
                 float lighting = .35 + .65 * saturate(dot(normalize(i.normal), normalize(float3(.4,.8,-.3))));
+                lighting=lerp(lighting,1,_MapPreview);
                 float grid = step(.96, frac(i.world.x)) + step(.96, frac(i.world.z));
                 float tiles = fmod(abs(floor(i.world.x) + floor(i.world.z)),2);
                 float pattern = lerp(1,lerp(.28,1,tiles),_TileFloor);
                 float fog = exp(-distance(i.world,_WorldSpaceCameraPos)*.055);
+                fog=lerp(fog,1,_MapPreview);
                 return fixed4(_Color.rgb * lighting * pattern * fog * (1 - saturate(grid) * .12), 1);
             }
             ENDCG

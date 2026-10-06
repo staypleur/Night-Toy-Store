@@ -42,6 +42,7 @@ namespace NightToyStore.Editor
             material.frictionCombine = PhysicsMaterialCombine.Minimum;
             EditorUtility.SetDirty(material);
             sphere.sharedMaterial = material;
+            player.AddComponent<NetworkStoreState>();
             player.AddComponent<NetworkToyPlayer>();
             player.AddComponent<NetworkVoice>();
             var prefab = PrefabUtility.SaveAsPrefabAsset(player, "Assets/NightToyStore/Prefabs/NetworkToy.prefab");

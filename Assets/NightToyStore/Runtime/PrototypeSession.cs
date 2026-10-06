@@ -10,6 +10,16 @@ namespace NightToyStore
         public GameObject playerPrefab;
         public NetworkManager Manager { get; private set; }
         public string Status { get; private set; } = "Ready";
+        public int StoreSeed { get; private set; }
+        public int StoreUnlocked, StorePicked, StoreKeys;
+        public bool ShareStoreKeys;
+        public bool UseProceduralStore {
+            get {
+                string[] flags = Environment.GetCommandLineArgs();
+                return Array.IndexOf(flags,"-nts-test")<0 && Array.IndexOf(flags,"-nts-physics-test")<0 &&
+                    Array.IndexOf(flags,"-nts-voice-test")<0 && Array.IndexOf(flags,"-nts-art-capture")<0 && Array.IndexOf(flags,"-nts-echo-capture")<0;
+            }
+        }
         string address = "127.0.0.1";
         Camera lobbyCamera;
         double deadline;
@@ -51,6 +61,14 @@ namespace NightToyStore
         {
             response.Approved = Manager.ConnectedClientsIds.Count < 4;
             response.CreatePlayerObject = response.Approved;
+            if(response.Approved && UseProceduralStore && ProceduralStore.Instance.Layout!=null)
+            {
+                var used=new bool[4];
+                foreach(var actor in FindObjectsByType<NetworkToyPlayer>(FindObjectsSortMode.None)) if(actor.IsSpawned) used[actor.Role.Value]=true;
+                int slot=Array.FindIndex(used,value=>!value);
+                response.Position=ProceduralStore.Instance.Layout.Spawn(Mathf.Max(0,slot));
+                response.Rotation=Quaternion.identity;
+            }
             response.Reason = response.Approved ? "" : "The four toy slots are full.";
             response.Pending = false;
         }
@@ -58,6 +76,7 @@ namespace NightToyStore
         void Start()
         {
             string[] args = Environment.GetCommandLineArgs();
+            ShareStoreKeys=Array.IndexOf(args,"-nts-shared-keys")>=0;
             automated = Array.IndexOf(args, "-nts-test") >= 0;
             twoRoleTest = Array.IndexOf(args, "-nts-two-test") >= 0;
             if (twoRoleTest) automated = true;
@@ -73,6 +92,7 @@ namespace NightToyStore
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
             if (physicsTest && Manager.IsHost) gameObject.AddComponent<PrototypePhysicsProbe>();
             if (Array.IndexOf(args, "-nts-voice-test") >= 0) gameObject.AddComponent<PrototypeVoiceProbe>();
+            if (Array.IndexOf(args, "-nts-store-test") >= 0) gameObject.AddComponent<PrototypeStoreProbe>();
             deadline = Time.realtimeSinceStartupAsDouble + 35;
         }
 
@@ -83,6 +103,14 @@ namespace NightToyStore
             int portIndex = Array.IndexOf(args, "-nts-port");
             if (portIndex >= 0 && portIndex + 1 < args.Length) ushort.TryParse(args[portIndex + 1], out port);
             Manager.GetComponent<UnityTransport>().SetConnectionData(address, port, "0.0.0.0");
+            if(host && UseProceduralStore)
+            {
+                StoreSeed = (Guid.NewGuid().GetHashCode() & int.MaxValue) | 1;
+                int seedIndex=Array.IndexOf(args,"-nts-seed");
+                if(seedIndex>=0 && seedIndex+1<args.Length && int.TryParse(args[seedIndex+1],out int specified) && specified!=0) StoreSeed=specified;
+                ProceduralStore.Instance.Ensure(StoreSeed);
+                StoreUnlocked=1<<(ProceduralStore.Instance.Layout.StartRoom-1);
+            }
             bool started = host ? Manager.StartHost() : Manager.StartClient();
             Status = started ? "Connecting..." : "Could not start connection";
         }
@@ -209,6 +237,16 @@ namespace NightToyStore
 
         void CaptureWorld(Camera camera)
         {
+            bool overview=UseProceduralStore && Array.IndexOf(Environment.GetCommandLineArgs(),"-nts-map-capture")>=0;
+            if(overview)
+            {
+                foreach(var renderer in ProceduralStore.Instance.GetComponentsInChildren<Renderer>())
+                    if(renderer.gameObject.name=="Ceiling") renderer.enabled=false;
+                camera.transform.position=new Vector3(0,30,0);camera.transform.rotation=Quaternion.Euler(90,0,0);
+                camera.orthographic=true;camera.orthographicSize=14;
+                Shader.SetGlobalFloat("_MapPreview",1);
+                System.IO.File.WriteAllText(capturePath+".json",ProceduralStore.Instance.Layout.ToJson());
+            }
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-art-capture") >= 0)
             {
                 for(int role=0;role<4;role++)
@@ -226,6 +264,7 @@ namespace NightToyStore
             var previous = RenderTexture.active;
             camera.targetTexture = target;
             camera.Render();
+            Shader.SetGlobalFloat("_MapPreview",0);
             RenderTexture.active = target;
             texture.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
             texture.Apply();
@@ -244,7 +283,7 @@ namespace NightToyStore
         void OnGUI()
         {
             if (Manager.IsListening && Manager.IsConnectedClient) return;
-            GUI.Box(new Rect(20, 180, 360, 165), "Night Toy Store — LAN prototype");
+            GUI.Box(new Rect(20, 180, 360, UseProceduralStore?205:165), "Night Toy Store — LAN prototype");
             GUI.Label(new Rect(35, 212, 330, 22), "Host address (same PC: 127.0.0.1)");
             address = GUI.TextField(new Rect(35, 240, 330, 25), address);
             GUI.enabled = !Manager.IsListening;
@@ -252,6 +291,8 @@ namespace NightToyStore
             if (GUI.Button(new Rect(215, 278, 150, 28), "Join")) Connect(false);
             GUI.enabled = true;
             GUI.Label(new Rect(35, 312, 330, 25), Status);
+            if(UseProceduralStore && !Manager.IsListening)
+                ShareStoreKeys=GUI.Toggle(new Rect(35,342,330,25),ShareStoreKeys,"TEST OPTION: team-shared keys (host)");
         }
     }
 }

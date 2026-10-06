@@ -59,6 +59,8 @@ namespace NightToyStore
                 int slot = Array.FindIndex(used, value => !value);
                 Role.Value = Mathf.Max(0, slot);
                 SpawnPosition = new Vector3(-4 + Role.Value * 2.5f, .4f, -4);
+                var session = UnityEngine.Object.FindFirstObjectByType<PrototypeSession>();
+                if(session.UseProceduralStore) SpawnPosition = ProceduralStore.Instance.Layout.Spawn(Role.Value);
                 transform.position = SpawnPosition;
             }
             Role.OnValueChanged += OnRoleChanged;
@@ -82,7 +84,7 @@ namespace NightToyStore
                 automated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-test") >= 0;
                 physicsAutomated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-physics-test") >= 0;
                 automated |= physicsAutomated;
-                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0)
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-store-test") >= 0)
                 { automated = true; physicsAutomated = true; }
                 wantsMouseLook = !automated && Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-capture") < 0;
                 if (wantsMouseLook && Application.isFocused) CaptureMouse();
@@ -92,7 +94,14 @@ namespace NightToyStore
 
         protected override void OnNetworkPostSpawn()
         {
-            if (IsServer) GetComponent<NetworkTransform>().Teleport(SpawnPosition, Quaternion.identity, Vector3.one);
+            if (IsServer)
+            {
+                controller.enabled=false;
+                body.position=SpawnPosition;
+                GetComponent<NetworkTransform>().Teleport(SpawnPosition, Quaternion.identity, Vector3.one);
+                Physics.SyncTransforms();
+                controller.enabled=Role.Value!=3;
+            }
         }
 
         void OnRoleChanged(int previous, int current)
