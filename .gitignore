@@ -7,5 +7,7 @@
 /.vs/
 *.csproj
 *.sln
+*.slnx
+/.vscode/
 *.user
 *.log

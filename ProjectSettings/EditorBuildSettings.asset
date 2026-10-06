@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/NightToyStore/Scenes/LocalTest.unity
-    guid: 5dc40c70ce74c4a4596c766f544bf9d9
+    path: Assets/NightToyStore/Scenes/NetworkTest.unity
+    guid: 3e841b24bc9dc1649a3ea5fc9ca27d98
   m_configObjects: {}
