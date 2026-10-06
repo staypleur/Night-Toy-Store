@@ -30,6 +30,9 @@ namespace NightToyStore
             block.name = name;
             block.transform.position = position;
             block.transform.localScale = scale;
+            block.GetComponent<Renderer>().sharedMaterial = PrototypeMaterials.Create(
+                name == "Floor" ? new Color(.32f, .36f, .4f) :
+                name == "Temporary shelf" ? new Color(.45f, .31f, .2f) : new Color(.24f, .29f, .34f));
         }
     }
 }

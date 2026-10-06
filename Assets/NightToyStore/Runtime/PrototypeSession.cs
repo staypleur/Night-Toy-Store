@@ -16,6 +16,10 @@ namespace NightToyStore
         bool automated;
         int expectedPlayers;
         bool testImpulseApplied, clientReported;
+        bool twoRoleTest, captureDone;
+        int roleTestStage;
+        bool hostTestRoleRestored;
+        string capturePath;
 
         void Awake()
         {
@@ -53,6 +57,11 @@ namespace NightToyStore
         {
             string[] args = Environment.GetCommandLineArgs();
             automated = Array.IndexOf(args, "-nts-test") >= 0;
+            twoRoleTest = Array.IndexOf(args, "-nts-two-test") >= 0;
+            if (twoRoleTest) automated = true;
+            int captureIndex = Array.IndexOf(args, "-nts-capture");
+            if (captureIndex >= 0 && captureIndex + 1 < args.Length) capturePath = args[captureIndex + 1];
+            Application.runInBackground = true;
             expectedPlayers = Array.IndexOf(args, "-nts-full") >= 0 ? 4 : 1;
             if (Array.IndexOf(args, "-nts-host") >= 0) Connect(true);
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
@@ -61,7 +70,11 @@ namespace NightToyStore
 
         public void Connect(bool host)
         {
-            Manager.GetComponent<UnityTransport>().SetConnectionData(address, 7777, "0.0.0.0");
+            ushort port = 7777;
+            string[] args = Environment.GetCommandLineArgs();
+            int portIndex = Array.IndexOf(args, "-nts-port");
+            if (portIndex >= 0 && portIndex + 1 < args.Length) ushort.TryParse(args[portIndex + 1], out port);
+            Manager.GetComponent<UnityTransport>().SetConnectionData(address, port, "0.0.0.0");
             bool started = host ? Manager.StartHost() : Manager.StartClient();
             Status = started ? "Connecting..." : "Could not start connection";
         }
@@ -70,8 +83,56 @@ namespace NightToyStore
         {
             bool ownsPlayer = Manager.LocalClient != null && Manager.LocalClient.PlayerObject != null;
             lobbyCamera.enabled = !ownsPlayer;
+            if (!captureDone && capturePath != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > 3)
+            {
+                captureDone = true;
+                CaptureWorld(Manager.LocalClient.PlayerObject.GetComponentInChildren<Camera>());
+            }
             if (!automated) return;
             var observed = FindObjectsByType<NetworkToyPlayer>(FindObjectsSortMode.None);
+            if (twoRoleTest)
+            {
+                if (!Manager.IsHost && ownsPlayer)
+                {
+                    var owner = Manager.LocalClient.PlayerObject.GetComponent<NetworkToyPlayer>();
+                    double elapsed = Time.realtimeSinceStartupAsDouble;
+                    if (roleTestStage == 0 && elapsed > 2) { owner.ChangeRoleRpc(3); roleTestStage++; }
+                    else if (roleTestStage == 1 && elapsed > 4) { owner.ChangeRoleRpc(0); roleTestStage++; }
+                    else if (roleTestStage == 2 && elapsed > 6) { owner.ChangeRoleRpc(2); roleTestStage++; }
+                    else if (roleTestStage == 3 && elapsed > 8) { owner.ChangeRoleRpc(3); roleTestStage++; }
+                    if (!clientReported && elapsed > 13 && owner.Role.Value == 3 && observed.Length == 2)
+                    {
+                        Debug.Log("NTS_TWO_CLIENT_PASS role switch and swap replicated");
+                        clientReported = true;
+                    }
+                }
+                if (Manager.IsHost && observed.Length == 2)
+                {
+                    if (!hostTestRoleRestored && Time.realtimeSinceStartupAsDouble > 14)
+                    {
+                        Manager.LocalClient.PlayerObject.GetComponent<NetworkToyPlayer>().ChangeRoleRpc(0);
+                        hostTestRoleRestored = true;
+                    }
+                    if (!testImpulseApplied && Time.realtimeSinceStartupAsDouble > 15)
+                    {
+                        foreach (var player in observed) player.ApplySmokeImpulse();
+                        testImpulseApplied = true;
+                    }
+                    if (Time.realtimeSinceStartupAsDouble > 22)
+                    {
+                        bool radio = false, ball = false;
+                        foreach (var player in observed) { radio |= player.Role.Value == 0; ball |= player.Role.Value == 3; }
+                        if (radio && ball)
+                        {
+                            Debug.Log("NTS_TWO_HOST_PASS unique roles after switches and occupied-role swap");
+                            Application.Quit(0);
+                            automated = false;
+                        }
+                    }
+                }
+                if (Time.realtimeSinceStartupAsDouble > deadline) Application.Quit(2);
+                return;
+            }
             if (Manager.IsHost && Manager.ConnectedClientsIds.Count == expectedPlayers &&
                 !testImpulseApplied && Time.realtimeSinceStartupAsDouble > 9)
             {
@@ -122,6 +183,28 @@ namespace NightToyStore
                 Application.Quit(2);
                 automated = false;
             }
+        }
+
+        void CaptureWorld(Camera camera)
+        {
+            var target = new RenderTexture(960, 540, 24);
+            var texture = new Texture2D(960, 540, TextureFormat.RGB24, false);
+            var previous = RenderTexture.active;
+            camera.targetTexture = target;
+            camera.Render();
+            RenderTexture.active = target;
+            texture.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+            texture.Apply();
+            System.IO.File.WriteAllBytes(capturePath, texture.EncodeToPNG());
+            int pink = 0;
+            foreach (var pixel in texture.GetPixels32())
+                if (pixel.r > 220 && pixel.b > 220 && pixel.g < 60) pink++;
+            camera.targetTexture = null;
+            RenderTexture.active = previous;
+            target.Release();
+            Destroy(target); Destroy(texture);
+            Debug.Log($"NTS_RENDER_CAPTURE magentaPixels={pink}");
+            Application.Quit(pink > 500 ? 3 : 0);
         }
 
         void OnGUI()

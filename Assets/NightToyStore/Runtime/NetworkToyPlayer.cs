@@ -21,6 +21,7 @@ namespace NightToyStore
         float yaw, pitch, serverYaw, verticalSpeed, lastInput, nextSend, pulseUntil;
         bool running, automated;
         float tunedFrequency, signalTimer, nextPush;
+        Material visualMaterial;
 
         void Awake()
         {
@@ -63,7 +64,17 @@ namespace NightToyStore
             Debug.Log($"NTS_ROLE owner={OwnerClientId} role={(ToyRole)Role.Value}");
         }
 
-        void OnRoleChanged(int previous, int current) => ApplyRole();
+        void OnRoleChanged(int previous, int current)
+        {
+            ApplyRole();
+            if (view != null)
+            {
+                view.transform.localPosition = Vector3.up * (current == 2 ? .65f : 1.5f);
+                Debug.Log($"NTS_CAMERA_HEIGHT role={current} height={view.transform.localPosition.y}");
+            }
+            pulseUntil = 0;
+            Debug.Log($"NTS_ROLE_CHANGED owner={OwnerClientId} role={(ToyRole)current}");
+        }
 
         void ApplyRole()
         {
@@ -73,6 +84,7 @@ namespace NightToyStore
             body.isKinematic = !(IsServer && ball);
             body.constraints = RigidbodyConstraints.FreezeRotation;
             if (visual != null) Destroy(visual);
+            if (visualMaterial != null) Destroy(visualMaterial);
             visual = GameObject.CreatePrimitive(ball ? PrimitiveType.Sphere : PrimitiveType.Capsule);
             Destroy(visual.GetComponent<Collider>());
             visual.transform.SetParent(transform, false);
@@ -80,7 +92,9 @@ namespace NightToyStore
             visual.transform.localScale = ball ? Vector3.one * .6f :
                 new Vector3(.65f, Role.Value == 2 ? .5f : .8f, .65f);
             var colors = new[] { Color.cyan, Color.gray, Color.magenta, Color.yellow };
-            visual.GetComponent<Renderer>().material.color = colors[Role.Value];
+            colors[2] = new Color(.85f, .45f, .22f);
+            visualMaterial = PrototypeMaterials.Create(colors[Role.Value]);
+            visual.GetComponent<Renderer>().sharedMaterial = visualMaterial;
             if (IsOwner) visual.GetComponent<Renderer>().enabled = false;
         }
 
@@ -108,6 +122,8 @@ namespace NightToyStore
                 if (Role.Value == 0)
                     tunedFrequency = Mathf.Clamp(tunedFrequency + Input.mouseScrollDelta.y * 2, 0, 100);
                 if (Input.GetKeyDown(KeyCode.E) && Role.Value != 3) PushBallRpc();
+                for (int i = 0; i < 4; i++)
+                    if (Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + i))) ChangeRoleRpc(i);
             }
             if (!IsServer || Role.Value == 3) return;
             if (Role.Value == 0 && (signalTimer -= Time.deltaTime) <= 0)
@@ -133,6 +149,27 @@ namespace NightToyStore
             serverYaw = heading;
             running = sprint;
             lastInput = Time.time;
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void ChangeRoleRpc(int requestedRole)
+        {
+            if (requestedRole < 0 || requestedRole > 3 || requestedRole == Role.Value) return;
+            int previous = Role.Value;
+            foreach (var player in FindObjectsByType<NetworkToyPlayer>(FindObjectsSortMode.None))
+                if (player != this && player.IsSpawned && player.Role.Value == requestedRole)
+                    player.ResetRole(previous);
+            ResetRole(requestedRole);
+        }
+
+        void ResetRole(int role)
+        {
+            if (!body.isKinematic) { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
+            movement = Vector2.zero;
+            verticalSpeed = 0;
+            running = false;
+            Stamina.Value = 100;
+            Role.Value = role;
         }
 
         [Rpc(SendTo.Server, RequireOwnership = true)]
@@ -182,12 +219,21 @@ namespace NightToyStore
                 GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
-            GUI.Box(new Rect(12, 12, 560, 130), "Night Toy Store — NETWORK TEST");
+            GUI.Box(new Rect(12, 12, 620, 180), "Night Toy Store — NETWORK TEST");
             GUI.Label(new Rect(24, 40, 530, 24), $"Role: {(ToyRole)Role.Value} | Stamina: {Stamina.Value:0}");
             GUI.Label(new Rect(24, 64, 530, 24), "WASD / Shift run / E roll nearby ball / Space temporary pulse / Esc cursor");
             GUI.Label(new Rect(24, 88, 530, 24), "Connection-order roles. Temporary models. Voice and real echolocation pending.");
             if (Role.Value == 0)
                 GUI.Label(new Rect(24, 112, 530, 24), $"Tune {tunedFrequency:0} / debug target {SignalFrequency.Value:0} / signal {Mathf.Abs(tunedFrequency - SignalFrequency.Value) < 2}");
+            GUI.Label(new Rect(24, 140, 590, 24), "TEST: 1 Radio / 2 Grandmother / 3 Rabbit / 4 Ball (occupied roles swap)");
+            foreach (var player in FindObjectsByType<NetworkToyPlayer>(FindObjectsSortMode.None))
+            {
+                if (player == this || view == null || Role.Value == 1 && Time.time > pulseUntil) continue;
+                var point = view.WorldToScreenPoint(player.transform.position + Vector3.up * .9f);
+                if (point.z > 0)
+                    GUI.Label(new Rect(point.x - 65, Screen.height - point.y, 180, 25),
+                        $"{(ToyRole)player.Role.Value} ({Vector3.Distance(transform.position, player.transform.position):0.0}m)");
+            }
         }
     }
 }

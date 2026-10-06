@@ -2,7 +2,7 @@ param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Executable) {
-    $Executable = Join-Path $projectRoot 'Builds\NetworkTest\NightToyStore.exe'
+    $Executable = Join-Path $projectRoot 'Builds\NetworkTest-02\NightToyStore.exe'
 }
 if (-not (Test-Path -LiteralPath $Executable)) { throw "Build not found: $Executable" }
 $logsRoot = Join-Path $projectRoot 'Logs'
@@ -10,11 +10,11 @@ New-Item -ItemType Directory -Path $logsRoot -Force | Out-Null
 $testProcesses = @()
 try {
     $hostLog = Join-Path $logsRoot 'smoke-host.log'
-    $testProcesses += Start-Process -FilePath $Executable -ArgumentList ('-batchmode -nographics -nts-host -nts-test -nts-full -logFile "' + $hostLog + '"') -WindowStyle Hidden -PassThru
+    $testProcesses += Start-Process -FilePath $Executable -ArgumentList ('-batchmode -nographics -nts-port 7788 -nts-host -nts-test -nts-full -logFile "' + $hostLog + '"') -WindowStyle Hidden -PassThru
     Start-Sleep -Seconds 3
     for ($index = 1; $index -le 3; $index++) {
         $clientLog = Join-Path $logsRoot "smoke-client-$index.log"
-        $testProcesses += Start-Process -FilePath $Executable -ArgumentList ('-batchmode -nographics -nts-client -nts-test -logFile "' + $clientLog + '"') -WindowStyle Hidden -PassThru
+        $testProcesses += Start-Process -FilePath $Executable -ArgumentList ('-batchmode -nographics -nts-port 7788 -nts-client -nts-test -logFile "' + $clientLog + '"') -WindowStyle Hidden -PassThru
         Start-Sleep -Milliseconds 800
     }
     $completed = $testProcesses[0].WaitForExit(45000)
