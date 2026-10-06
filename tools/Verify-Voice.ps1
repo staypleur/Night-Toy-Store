@@ -1,7 +1,7 @@
 param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-05\NightToyStore.exe' }
+if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-06\NightToyStore.exe' }
 $testProcesses = @()
 try {
     $hostLog = Join-Path $projectRoot 'Logs\voice-host.log'
@@ -15,7 +15,7 @@ try {
     foreach ($log in $hostLog,$clientLog) {
         if (Select-String -LiteralPath $log -Pattern 'Exception:|Error:' -Quiet) { throw "Runtime error in $log" }
     }
-    Write-Output 'PASS: PCM round trip, network voice, sound waves, rabbit voice rejection, cane role restriction. No microphone capture.'
+    Write-Output 'PASS: PCM round trip, network voice, grandmother own-voice wave, 3m walking pulse, rabbit voice rejection, cane cooldown. No microphone capture.'
 } finally {
     foreach ($testProcess in $testProcesses) {
         if (-not $testProcess.HasExited) { Stop-Process -Id $testProcess.Id -ErrorAction SilentlyContinue }

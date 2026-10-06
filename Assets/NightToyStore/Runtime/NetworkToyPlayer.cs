@@ -21,7 +21,7 @@ namespace NightToyStore
         float yaw, pitch, serverYaw, verticalSpeed, lastInput, nextSend;
         bool running, automated;
         float tunedFrequency, signalTimer;
-        Material visualMaterial;
+
         Vector3 prePhysicsVelocity;
         bool wantsMouseLook;
         public int WallBounceCount { get; private set; }
@@ -36,9 +36,11 @@ namespace NightToyStore
         public Camera OwnerCamera => view;
         public static float ViewHeight(int role) => role == 2 ? .65f : role == 3 ? .95f : 1.5f;
         public const float BallRadius = .65f;
+        public readonly NetworkVariable<float> LookHeading = new NetworkVariable<float>(0);
         public readonly NetworkVariable<float> CaneReadyAt = new NetworkVariable<float>(0);
         public int ReceivedNoiseEvents { get; private set; }
         public int ReceivedVoiceEvents { get; private set; }
+        public int ReceivedFootstepEvents { get; private set; }
 
         void Awake()
         {
@@ -76,7 +78,7 @@ namespace NightToyStore
                 light.range = 15;
                 light.spotAngle = 65;
                 light.intensity = 2;
-                visual.GetComponent<Renderer>().enabled = false;
+                foreach (var renderer in visual.GetComponentsInChildren<Renderer>()) renderer.enabled = false;
                 automated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-test") >= 0;
                 physicsAutomated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-physics-test") >= 0;
                 automated |= physicsAutomated;
@@ -86,6 +88,11 @@ namespace NightToyStore
                 if (wantsMouseLook && Application.isFocused) CaptureMouse();
             }
             Debug.Log($"NTS_ROLE owner={OwnerClientId} role={(ToyRole)Role.Value}");
+        }
+
+        protected override void OnNetworkPostSpawn()
+        {
+            if (IsServer) GetComponent<NetworkTransform>().Teleport(SpawnPosition, Quaternion.identity, Vector3.one);
         }
 
         void OnRoleChanged(int previous, int current)
@@ -101,6 +108,7 @@ namespace NightToyStore
 
         void ApplyRole()
         {
+            footstepDistance = 0;
             bool ball = Role.Value == 3;
             ballCollider.radius = BallRadius;
             ballCollider.center = Vector3.up * BallRadius;
@@ -111,23 +119,15 @@ namespace NightToyStore
             body.collisionDetectionMode = IsServer && ball ? CollisionDetectionMode.ContinuousDynamic :
                 CollisionDetectionMode.Discrete;
             if (visual != null) Destroy(visual);
-            if (visualMaterial != null) Destroy(visualMaterial);
-            visual = GameObject.CreatePrimitive(ball ? PrimitiveType.Sphere : PrimitiveType.Capsule);
-            Destroy(visual.GetComponent<Collider>());
-            visual.transform.SetParent(transform, false);
-            visual.transform.localPosition = Vector3.up * (ball ? BallRadius : Role.Value == 2 ? .5f : .8f);
-            visual.transform.localScale = ball ? Vector3.one * (BallRadius * 2) :
-                new Vector3(.65f, Role.Value == 2 ? .5f : .8f, .65f);
-            var colors = new[] { Color.cyan, Color.gray, Color.magenta, Color.yellow };
-            colors[2] = new Color(.85f, .45f, .22f);
-            visualMaterial = PrototypeMaterials.Create(colors[Role.Value]);
-            visual.GetComponent<Renderer>().sharedMaterial = visualMaterial;
-            if (IsOwner) visual.GetComponent<Renderer>().enabled = false;
+
+            visual = ToyVisuals.Create(Role.Value, transform);
+            if (IsOwner) foreach (var renderer in visual.GetComponentsInChildren<Renderer>()) renderer.enabled = false;
         }
 
         void Update()
         {
             if (!IsSpawned) return;
+            if (visual != null) visual.transform.rotation = Quaternion.Euler(0, LookHeading.Value, 0);
             if (IsOwner)
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
@@ -176,9 +176,9 @@ namespace NightToyStore
             var traveled = transform.position - previousPosition;
             traveled.y = 0;
             footstepDistance += traveled.magnitude;
-            if (footstepDistance > .85f && controller.isGrounded)
+            if (footstepDistance >= 3f && controller.isGrounded)
             {
-                footstepDistance = 0;
+                footstepDistance -= 3f;
                 NoiseRpc(transform.position + Vector3.up * .05f, (int)EchoSoundKind.Footstep, .22f);
             }
         }
@@ -198,6 +198,7 @@ namespace NightToyStore
             EchoVision.Emit(position, (EchoSoundKind)kind, strength);
             ReceivedNoiseEvents++;
             if (kind == (int)EchoSoundKind.Voice) ReceivedVoiceEvents++;
+            if (kind == (int)EchoSoundKind.Footstep) ReceivedFootstepEvents++;
         }
 
         [Rpc(SendTo.Server, RequireOwnership = true)]
@@ -206,6 +207,7 @@ namespace NightToyStore
             if (!float.IsFinite(input.x) || !float.IsFinite(input.y) || !float.IsFinite(heading)) return;
             movement = Vector2.ClampMagnitude(input, 1);
             serverYaw = heading;
+            LookHeading.Value = heading;
             running = sprint;
             lastInput = Time.time;
         }

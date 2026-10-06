@@ -52,9 +52,30 @@ namespace NightToyStore
             yield return new WaitForSeconds(.1f);
             if (owner.ReceivedNoiseEvents != noise) { Fail("radio used cane"); yield break; }
             owner.Role.Value = 1;
+            int selfWaves = owner.ReceivedVoiceEvents, emitted = EchoVision.EmittedCount;
+            voice.UploadRpc(frame, 1);
+            yield return new WaitForSeconds(.1f);
+            if (owner.ReceivedVoiceEvents <= selfWaves || EchoVision.EmittedCount <= emitted)
+            { Fail("grandmother own voice did not produce visible pulse"); yield break; }
+            noise = owner.ReceivedNoiseEvents;
             owner.CaneRpc();
             yield return new WaitForSeconds(.1f);
             if (owner.ReceivedNoiseEvents <= noise) { Fail("grandmother cane missing"); yield break; }
+            int steps = owner.ReceivedFootstepEvents;
+            var walkingController = owner.GetComponent<CharacterController>();
+            walkingController.enabled = false;
+            owner.transform.position = new Vector3(-7, .08f, -7);
+            walkingController.enabled = true;
+            Vector3 walkingStart = owner.transform.position;
+            owner.PhysicsTestInput = Vector2.up;
+            float walkDeadline = Time.realtimeSinceStartup + 4;
+            while (owner.ReceivedFootstepEvents == steps && Time.realtimeSinceStartup < walkDeadline)
+                yield return null;
+            owner.PhysicsTestInput = Vector2.zero;
+            Vector3 walked = owner.transform.position - walkingStart;
+            walked.y = 0;
+            if (owner.ReceivedFootstepEvents != steps + 1 || walked.magnitude < 2.9f || walked.magnitude > 3.15f)
+            { Fail($"walking pulse threshold count={owner.ReceivedFootstepEvents-steps} distance={walked.magnitude} start={walkingStart} end={owner.transform.position}"); yield break; }
             noise = owner.ReceivedNoiseEvents;
             owner.CaneRpc();
             if (owner.ReceivedNoiseEvents != noise) { Fail("cane cooldown bypass"); yield break; }

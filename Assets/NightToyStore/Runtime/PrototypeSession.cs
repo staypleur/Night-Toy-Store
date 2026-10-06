@@ -209,6 +209,18 @@ namespace NightToyStore
 
         void CaptureWorld(Camera camera)
         {
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-art-capture") >= 0)
+            {
+                for(int role=0;role<4;role++)
+                {
+                    var stand = new GameObject("Art preview stand");
+                    stand.transform.position = new Vector3((role - 1.5f) * 2.2f, 0, -1);
+                    var model = ToyVisuals.Create(role, stand.transform);
+                    model.transform.rotation = Quaternion.Euler(0,180,0);
+                }
+                camera.transform.position = new Vector3(0,2,-7);
+                camera.transform.rotation = Quaternion.Euler(8,0,0);
+            }
             var target = new RenderTexture(960, 540, 24);
             var texture = new Texture2D(960, 540, TextureFormat.RGB24, false);
             var previous = RenderTexture.active;

@@ -179,7 +179,7 @@ namespace NightToyStore
             float level = Rms(Decode(frame));
             RelayedFrames++;
             RelayRpc(frame, frameSequence);
-            if (level > .008f)
+            if (level > .001f)
             {
                 bool beginning = Time.unscaledTime - lastLoudFrame > .35f;
                 lastLoudFrame = Time.unscaledTime;

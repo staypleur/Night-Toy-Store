@@ -1,6 +1,6 @@
 Shader "NightToyStore/PrototypeSurface"
 {
-    Properties { _Color ("Color", Color) = (0.5,0.5,0.5,1) }
+    Properties { _Color ("Color", Color) = (0.5,0.5,0.5,1) _TileFloor ("Tile Floor", Float) = 0 }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -13,6 +13,7 @@ Shader "NightToyStore/PrototypeSurface"
             struct v2f { float4 pos : SV_POSITION; float3 normal : TEXCOORD0; float3 world : TEXCOORD1; };
             fixed4 _Color;
             float _EchoMode;
+            float _TileFloor;
             v2f vert(appdata_base v) {
                 v2f o; o.pos = UnityObjectToClipPos(v.vertex);
                 o.normal = UnityObjectToWorldNormal(v.normal);
@@ -22,7 +23,10 @@ Shader "NightToyStore/PrototypeSurface"
                 if (_EchoMode > .5) discard;
                 float lighting = .35 + .65 * saturate(dot(normalize(i.normal), normalize(float3(.4,.8,-.3))));
                 float grid = step(.96, frac(i.world.x)) + step(.96, frac(i.world.z));
-                return fixed4(_Color.rgb * lighting * (1 - saturate(grid) * .12), 1);
+                float tiles = fmod(abs(floor(i.world.x) + floor(i.world.z)),2);
+                float pattern = lerp(1,lerp(.28,1,tiles),_TileFloor);
+                float fog = exp(-distance(i.world,_WorldSpaceCameraPos)*.055);
+                return fixed4(_Color.rgb * lighting * pattern * fog * (1 - saturate(grid) * .12), 1);
             }
             ENDCG
         }

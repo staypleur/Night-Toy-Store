@@ -6,11 +6,12 @@ namespace NightToyStore
 
     public sealed class EchoVision : MonoBehaviour
     {
-        public const float VoiceRange = 3, FootstepRange = 2;
+        public const float VoiceRange = 3, FootstepRange = 6;
         const int Capacity = 24;
         static readonly Vector4[] pulses = new Vector4[Capacity];
         static readonly Vector4[] settings = new Vector4[Capacity];
         static int next, count;
+        public static int EmittedCount { get; private set; }
         public NetworkToyPlayer Player;
         Camera camera;
         static EchoVision listener;
@@ -22,9 +23,10 @@ namespace NightToyStore
         {
             float range = kind == EchoSoundKind.Cane ? 24 : kind == EchoSoundKind.Voice ? VoiceRange : FootstepRange;
             if (listener != null && Vector3.Distance(listener.transform.position, origin) > range) return;
+            EmittedCount++;
             pulses[next] = new Vector4(origin.x, origin.y, origin.z, Time.time);
             settings[next] = kind == EchoSoundKind.Cane ? new Vector4(14, 24, .65f, strength) :
-                kind == EchoSoundKind.Footstep ? new Vector4(8, FootstepRange, .12f, strength) :
+                kind == EchoSoundKind.Footstep ? new Vector4(8, FootstepRange, .22f, strength) :
                 new Vector4(10, VoiceRange, .3f, strength);
             next = (next + 1) % Capacity;
             count = Mathf.Min(count + 1, Capacity);
@@ -33,7 +35,7 @@ namespace NightToyStore
         void OnPreRender()
         {
             bool active = Player != null && Player.Role.Value == (int)ToyRole.Grandmother;
-            camera.clearFlags = active ? CameraClearFlags.SolidColor : CameraClearFlags.Skybox;
+            camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = Color.black;
             Shader.SetGlobalFloat("_EchoMode", active ? 1 : 0);
             Shader.SetGlobalFloat("_EchoNow", Time.time);

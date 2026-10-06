@@ -18,7 +18,7 @@ Unity 6000.6.4f1에서 C# 컴파일, LocalTest와 NetworkTest 장면 생성, Win
 ### 네트워크 테스트
 
 - 장면: `Assets/NightToyStore/Scenes/NetworkTest.unity`.
-- 최신 실행 파일: `Builds/NetworkTest-05/NightToyStore.exe`. 이전 파일은 `Builds/NetworkTest`와 `Builds/NetworkTest-02`에 남아 있다. 빌드 산출물은 Git에 올리지 않는다.
+- 최신 실행 파일: `Builds/NetworkTest-06/NightToyStore.exe`. 이전 파일은 `Builds/NetworkTest`와 `Builds/NetworkTest-02`에 남아 있다. 빌드 산출물은 Git에 올리지 않는다.
 - Host 또는 Join 선택. 같은 PC는 주소 `127.0.0.1`, LAN은 호스트의 LAN IP. UDP 포트 7777. 외부 인터넷 접속·스팀 초대는 아직 지원하지 않는다.
 - 최대 4명. 접속 순서대로 라디오, 할머니, 토끼, 공을 임시 배정한다. 출시용 역할 선택 규칙이 아니다.
 - 테스트 중 1 라디오 / 2 할머니 / 3 토끼 / 4 공으로 변경 가능. 다른 플레이어가 가진 역할을 선택하면 서로 교환한다. 두 창으로 공과 이동 가능한 역할을 시험할 수 있다. 역할 선택·교환은 테스트 편의 기능이다.
@@ -84,9 +84,14 @@ Unity 6000.6.4f1에서 C# 컴파일, LocalTest와 NetworkTest 장면 생성, Win
 
 ## 05 버전 변경
 
-최신 실행 파일은 Builds/NetworkTest-05/NightToyStore.exe.
+최신 실행 파일은 Builds/NetworkTest-06/NightToyStore.exe.
 공 시점 0.95m(토끼 0.65m, 할머니 1.5m), 지름 1.3m. 굴림과 무관한 안정적인 시선 유지. 눈·입 등 최종 모델 연출은 아직 임시 구체 외형이다.
 할머니 Space 지팡이: 10초 재사용 제한과 대기시간 표시. 발걸음은 짧고 약한 근거리 윤곽만 표시한다.
 Esc → Mic gain(입력 증폭), Voice volume(다른 플레이어 음량), Detection(낮을수록 작은 소리 자동 감지) 조절.
 작은 마이크 테스트는 Mic gain 3~5배부터, V키를 눌러 말하며 level 수치 반응과 다른 창의 할머니 파동을 확인한다.
 발걸음 파동은 횟수를 인위적으로 줄이는 대신 소리 이벤트마다 한 번 확산한다. 발걸음 2m·목소리 3m는 예시를 적용한 임시 테스트 값이며 거리 밖 소리는 파동으로도 보이지 않는다. 목소리는 발화 시작에 한 번, 잠시 멈췄다 다시 말하면 새 파동이 발생한다.
+
+## 최신 06 버전
+
+Builds/NetworkTest-06/NightToyStore.exe. 할머니 자신의 목소리도 파동 생성. 걷기 파동은 승인된 이동 3m 간격/범위 6m로 변경(예전 2m 범위 설명을 대체). 지팡이 10초 제한 유지.
+네 캐릭터의 첫 외형과 진열대·타일·관제실 장식이 포함된다. 칠판·CCTV는 시각 장식이며 아직 작동하지 않는다. 기존 동작과 임시 물리 충돌 크기는 유지.
