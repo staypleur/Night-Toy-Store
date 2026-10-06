@@ -18,7 +18,7 @@ namespace NightToyStore
         Camera view;
         GameObject visual;
         Vector2 movement;
-        float yaw, pitch, serverYaw, verticalSpeed, lastInput, nextSend, pulseUntil;
+        float yaw, pitch, serverYaw, verticalSpeed, lastInput, nextSend;
         bool running, automated;
         float tunedFrequency, signalTimer;
         Material visualMaterial;
@@ -31,6 +31,11 @@ namespace NightToyStore
         public Vector2 PhysicsTestInput { get; set; }
         bool physicsAutomated;
         Vector3 desiredMovementVelocity;
+        float nextCane, footstepDistance;
+        public bool ReceivesRadioSignal => Mathf.Abs(tunedFrequency - SignalFrequency.Value) < 2;
+        public Camera OwnerCamera => view;
+        public int ReceivedNoiseEvents { get; private set; }
+        public int ReceivedVoiceEvents { get; private set; }
 
         void Awake()
         {
@@ -61,6 +66,7 @@ namespace NightToyStore
                 view = cameraObject.AddComponent<Camera>();
                 view.nearClipPlane = .05f;
                 view.backgroundColor = Color.black;
+                cameraObject.AddComponent<EchoVision>().Player = this;
                 cameraObject.AddComponent<AudioListener>();
                 var light = cameraObject.AddComponent<Light>();
                 light.type = LightType.Spot;
@@ -71,6 +77,8 @@ namespace NightToyStore
                 automated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-test") >= 0;
                 physicsAutomated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-physics-test") >= 0;
                 automated |= physicsAutomated;
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0)
+                { automated = true; physicsAutomated = true; }
                 wantsMouseLook = !automated && Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-capture") < 0;
                 if (wantsMouseLook && Application.isFocused) CaptureMouse();
             }
@@ -85,7 +93,6 @@ namespace NightToyStore
                 view.transform.localPosition = Vector3.up * (current == 2 ? .65f : 1.5f);
                 Debug.Log($"NTS_CAMERA_HEIGHT role={current} height={view.transform.localPosition.y}");
             }
-            pulseUntil = 0;
             Debug.Log($"NTS_ROLE_CHANGED owner={OwnerClientId} role={(ToyRole)current}");
         }
 
@@ -120,7 +127,11 @@ namespace NightToyStore
             {
                 if (Input.GetKeyDown(KeyCode.Escape))
                 { wantsMouseLook = false; Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
-                if (Input.GetMouseButtonDown(0) && !automated) { wantsMouseLook = true; CaptureMouse(); }
+                var guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+                bool clickingVoiceSettings = Cursor.lockState != CursorLockMode.Locked &&
+                    new Rect(12, 200, 620, 96).Contains(guiMouse);
+                if (Input.GetMouseButtonDown(0) && !automated && !clickingVoiceSettings)
+                { wantsMouseLook = true; CaptureMouse(); }
                 if (Application.isFocused && Cursor.lockState == CursorLockMode.Locked)
                     ApplyLookDelta(new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")));
                 view.transform.rotation = Quaternion.Euler(pitch, yaw, 0);
@@ -131,7 +142,7 @@ namespace NightToyStore
                     InputRpc(input, yaw, !automated && Input.GetKey(KeyCode.LeftShift));
                     nextSend = Time.time + .05f;
                 }
-                if (Role.Value == 1 && Input.GetKeyDown(KeyCode.Space)) pulseUntil = Time.time + 1.5f;
+                if (Role.Value == 1 && Input.GetKeyDown(KeyCode.Space)) CaneRpc();
                 if (Role.Value == 0)
                     tunedFrequency = Mathf.Clamp(tunedFrequency + Input.mouseScrollDelta.y * 2, 0, 100);
                 for (int i = 0; i < 4; i++)
@@ -155,7 +166,32 @@ namespace NightToyStore
             float speed = Role.Value == 2 ? 4 : Role.Value == 0 ? 3.4f : 2.8f;
             var delta = Quaternion.Euler(0, serverYaw, 0) * new Vector3(movement.x, 0, movement.y);
             desiredMovementVelocity = delta * speed * (sprint ? 1.6f : 1);
+            var previousPosition = transform.position;
             controller.Move((desiredMovementVelocity + Vector3.up * verticalSpeed) * Time.fixedDeltaTime);
+            var traveled = transform.position - previousPosition;
+            traveled.y = 0;
+            footstepDistance += traveled.magnitude;
+            if (footstepDistance > .85f && controller.isGrounded)
+            {
+                footstepDistance = 0;
+                NoiseRpc(transform.position + Vector3.up * .05f, (int)EchoSoundKind.Footstep, .8f);
+            }
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void CaneRpc()
+        {
+            if (Role.Value != 1 || Time.time < nextCane) return;
+            nextCane = Time.time + .5f;
+            NoiseRpc(transform.position + Vector3.up * .05f, (int)EchoSoundKind.Cane, 1);
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        public void NoiseRpc(Vector3 position, int kind, float strength)
+        {
+            EchoVision.Emit(position, (EchoSoundKind)kind, strength);
+            ReceivedNoiseEvents++;
+            if (kind == (int)EchoSoundKind.Voice) ReceivedVoiceEvents++;
         }
 
         [Rpc(SendTo.Server, RequireOwnership = true)]
@@ -270,16 +306,10 @@ namespace NightToyStore
         void OnGUI()
         {
             if (!IsSpawned || !IsOwner) return;
-            if (Role.Value == 1 && Time.time > pulseUntil)
-            {
-                GUI.color = Color.black;
-                GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
-                GUI.color = Color.white;
-            }
             GUI.Box(new Rect(12, 12, 620, 180), "Night Toy Store — NETWORK TEST");
             GUI.Label(new Rect(24, 40, 530, 24), $"Role: {(ToyRole)Role.Value} | Stamina: {Stamina.Value:0}");
             GUI.Label(new Rect(24, 64, 590, 24), "WASD / Shift run / walk into ball to push / Mouse look / Esc cursor");
-            GUI.Label(new Rect(24, 88, 530, 24), "Connection-order roles. Temporary models. Voice and real echolocation pending.");
+            GUI.Label(new Rect(24, 88, 590, 24), "Grandmother: Space cane pulse. Footsteps and voices reveal sound waves.");
             if (Role.Value == 0)
                 GUI.Label(new Rect(24, 112, 530, 24), $"Tune {tunedFrequency:0} / debug target {SignalFrequency.Value:0} / signal {Mathf.Abs(tunedFrequency - SignalFrequency.Value) < 2}");
             GUI.Label(new Rect(24, 140, 590, 24), "TEST: 1 Radio / 2 Grandmother / 3 Rabbit / 4 Ball (occupied roles swap)");
@@ -287,7 +317,7 @@ namespace NightToyStore
                 GUI.Label(new Rect(Screen.width / 2 - 150, Screen.height / 2, 300, 30), "Click inside this window to look around");
             foreach (var player in FindObjectsByType<NetworkToyPlayer>(FindObjectsSortMode.None))
             {
-                if (player == this || view == null || Role.Value == 1 && Time.time > pulseUntil) continue;
+                if (player == this || view == null || Role.Value == 1) continue;
                 var point = view.WorldToScreenPoint(player.transform.position + Vector3.up * .9f);
                 if (point.z > 0)
                     GUI.Label(new Rect(point.x - 65, Screen.height - point.y, 180, 25),

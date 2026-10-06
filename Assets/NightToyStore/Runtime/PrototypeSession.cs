@@ -20,6 +20,8 @@ namespace NightToyStore
         int roleTestStage;
         bool hostTestRoleRestored;
         string capturePath;
+        string echoCapture;
+        bool echoPrepared;
 
         void Awake()
         {
@@ -61,6 +63,8 @@ namespace NightToyStore
             if (twoRoleTest) automated = true;
             int captureIndex = Array.IndexOf(args, "-nts-capture");
             if (captureIndex >= 0 && captureIndex + 1 < args.Length) capturePath = args[captureIndex + 1];
+            int echoIndex = Array.IndexOf(args, "-nts-echo-capture");
+            if (echoIndex >= 0 && echoIndex + 1 < args.Length) echoCapture = args[echoIndex + 1];
             Application.runInBackground = true;
             bool physicsTest = Array.IndexOf(args, "-nts-physics-test") >= 0;
             if (physicsTest) automated = false;
@@ -68,6 +72,7 @@ namespace NightToyStore
             if (Array.IndexOf(args, "-nts-host") >= 0) Connect(true);
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
             if (physicsTest && Manager.IsHost) gameObject.AddComponent<PrototypePhysicsProbe>();
+            if (Array.IndexOf(args, "-nts-voice-test") >= 0) gameObject.AddComponent<PrototypeVoiceProbe>();
             deadline = Time.realtimeSinceStartupAsDouble + 35;
         }
 
@@ -86,6 +91,15 @@ namespace NightToyStore
         {
             bool ownsPlayer = Manager.LocalClient != null && Manager.LocalClient.PlayerObject != null;
             lobbyCamera.enabled = !ownsPlayer;
+            if (!echoPrepared && echoCapture != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > 2.5)
+            {
+                echoPrepared = true;
+                var actor = Manager.LocalClient.PlayerObject.GetComponent<NetworkToyPlayer>();
+                actor.Role.Value = 1;
+                if (echoCapture == "cane") actor.CaneRpc();
+                else if (echoCapture == "voice")
+                    actor.NoiseRpc(actor.transform.position + new Vector3(0, 1, 3), (int)EchoSoundKind.Voice, 1);
+            }
             if (!captureDone && capturePath != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > 3)
             {
                 captureDone = true;

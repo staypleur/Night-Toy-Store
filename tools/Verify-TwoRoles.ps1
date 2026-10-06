@@ -1,7 +1,7 @@
 param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-03\NightToyStore.exe' }
+if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-04\NightToyStore.exe' }
 $testProcesses = @()
 try {
     $hostLog = Join-Path $projectRoot 'Logs\two-host.log'

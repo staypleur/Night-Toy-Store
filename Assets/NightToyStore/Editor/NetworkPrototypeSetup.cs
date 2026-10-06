@@ -43,6 +43,7 @@ namespace NightToyStore.Editor
             EditorUtility.SetDirty(material);
             sphere.sharedMaterial = material;
             player.AddComponent<NetworkToyPlayer>();
+            player.AddComponent<NetworkVoice>();
             var prefab = PrefabUtility.SaveAsPrefabAsset(player, "Assets/NightToyStore/Prefabs/NetworkToy.prefab");
             UnityEngine.Object.DestroyImmediate(player);
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

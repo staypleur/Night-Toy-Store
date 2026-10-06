@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6852744381407787972}
   - component: {fileID: 9036914137951835925}
   - component: {fileID: 8353835998569308022}
+  - component: {fileID: 7012267131264557763}
   m_Layer: 0
   m_Name: NetworkToy
   m_TagString: Untagged
@@ -47,7 +48,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 0
   InScenePlacedSourceGlobalObjectIdHash: 0
@@ -74,7 +75,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkTransformExpanded: 0
@@ -193,6 +194,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 689a05a6a2e50be45a5f38f8f70bc9d5, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::NightToyStore.NetworkToyPlayer
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7012267131264557763
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554808207598391085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: edcdb5c9a56782642bc5d020f9068c36, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NightToyStore.NetworkVoice
   ShowTopMostFoldoutHeaderGroup: 1
