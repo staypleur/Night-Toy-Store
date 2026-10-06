@@ -2,15 +2,15 @@
 
 ## 상태
 
-Unity용 C# 소스 작성을 시작했다. Unity Editor를 발견하지 못했으므로 컴파일, 실행, 화면 검증은 아직 하지 못했다. 네트워크 협동 시제품은 아직 완성되지 않았다.
+Unity 6000.6.4f1에서 프로젝트 가져오기, C# 컴파일, LocalTest 장면 생성이 성공했다. 배치 실행 종료 코드 0과 성공 로그를 확인했다. 실제 플레이와 화면 검증은 아직 하지 못했다. 네트워크 협동 시제품은 아직 완성되지 않았다.
 
-엔진 방향: 사용자 승인으로 Unity 선택. Unity 6.3 LTS 설치를 기준으로 준비하며 정확한 패치 버전은 실제 설치 후 고정한다.
+엔진: 사용자 승인으로 Unity 선택. 사용자가 설치한 Unity 6.6, 정확한 버전 6000.6.4f1로 고정했다.
 
 ## 실행 준비
 
-1. Unity Hub에서 Unity 6.3 LTS 설치 및 개인 계정 라이선스 활성화.
+1. Unity Hub에서 Unity 6000.6.4f1 설치 및 개인 계정 라이선스 활성화. 현재 PC에서는 완료됨.
 2. 저장소 루트를 프로젝트로 추가. Assets, Packages, ProjectSettings 폴더가 있는 위치다.
-3. 에디터 메뉴 `Night Toy Store > Create Local Test Scene` 실행.
+3. `Assets/NightToyStore/Scenes/LocalTest.unity` 열기. 장면은 이미 생성됨. 재생성할 때는 `Night Toy Store > Create Local Test Scene` 실행.
 4. Play를 눌러 테스트. 입력 오류가 있으면 Player Settings의 Active Input Handling을 Input Manager 또는 Both로 설정하고 재시작.
 
 ## 현재 코드 범위
@@ -26,7 +26,7 @@ Unity용 C# 소스 작성을 시작했다. Unity Editor를 발견하지 못했�
 
 ## 다음 구현과 검증
 
-1. 에디터 설치 후 현재 소스 컴파일·실행 확인.
+1. 현재 장면의 실제 플레이와 화면 확인. 컴파일 검증은 완료됨.
 2. 공식 Netcode 패키지를 선택하고 호스트 + 클라이언트 3개 접속 검증.
 3. 역할을 플레이어별로 배정하고 공 굴리기의 물리 동기화 구현.
 4. 실제 파동 시야와 음성 제약 구현.
