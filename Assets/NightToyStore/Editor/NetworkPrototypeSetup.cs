@@ -24,19 +24,24 @@ namespace NightToyStore.Editor
             controller.height = 1.6f;
             controller.center = Vector3.up * .8f;
             controller.radius = .3f;
+            controller.minMoveDistance = 0;
             var body = player.AddComponent<Rigidbody>();
             body.isKinematic = true;
-            body.linearDamping = .8f;
+            body.linearDamping = .15f;
             var sphere = player.AddComponent<SphereCollider>();
             sphere.center = Vector3.up * .3f;
             sphere.radius = .3f;
             sphere.enabled = false;
-            var material = new PhysicsMaterial("Temporary ball bounce") { bounciness = .7f,
-                bounceCombine = PhysicsMaterialCombine.Maximum, dynamicFriction = .3f };
             const string materialPath = "Assets/NightToyStore/Prefabs/BallBounce.asset";
-            if (AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(materialPath) == null)
-                AssetDatabase.CreateAsset(material, materialPath);
-            sphere.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(materialPath);
+            var material = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(materialPath);
+            if (material == null) { material = new PhysicsMaterial("BallBounce"); AssetDatabase.CreateAsset(material, materialPath); }
+            material.bounciness = .65f;
+            material.bounceCombine = PhysicsMaterialCombine.Maximum;
+            material.dynamicFriction = .04f;
+            material.staticFriction = .04f;
+            material.frictionCombine = PhysicsMaterialCombine.Minimum;
+            EditorUtility.SetDirty(material);
+            sphere.sharedMaterial = material;
             player.AddComponent<NetworkToyPlayer>();
             var prefab = PrefabUtility.SaveAsPrefabAsset(player, "Assets/NightToyStore/Prefabs/NetworkToy.prefab");
             UnityEngine.Object.DestroyImmediate(player);

@@ -62,9 +62,12 @@ namespace NightToyStore
             int captureIndex = Array.IndexOf(args, "-nts-capture");
             if (captureIndex >= 0 && captureIndex + 1 < args.Length) capturePath = args[captureIndex + 1];
             Application.runInBackground = true;
+            bool physicsTest = Array.IndexOf(args, "-nts-physics-test") >= 0;
+            if (physicsTest) automated = false;
             expectedPlayers = Array.IndexOf(args, "-nts-full") >= 0 ? 4 : 1;
             if (Array.IndexOf(args, "-nts-host") >= 0) Connect(true);
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
+            if (physicsTest && Manager.IsHost) gameObject.AddComponent<PrototypePhysicsProbe>();
             deadline = Time.realtimeSinceStartupAsDouble + 35;
         }
 

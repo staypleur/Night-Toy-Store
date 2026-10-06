@@ -21,6 +21,7 @@ namespace NightToyStore
         {
             controller = gameObject.AddComponent<CharacterController>();
             controller.height = 1.6f;
+            controller.minMoveDistance = 0;
             controller.center = Vector3.up * .8f;
             var cameraObject = new GameObject("Player view");
             cameraObject.transform.SetParent(transform, false);
@@ -33,6 +34,7 @@ namespace NightToyStore
             light.spotAngle = 65f;
             light.intensity = 2f;
             SetRole(ToyRole.Radio);
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
         public void SetRole(ToyRole role)
