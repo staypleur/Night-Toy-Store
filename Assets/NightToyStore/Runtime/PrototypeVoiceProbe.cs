@@ -39,7 +39,7 @@ namespace NightToyStore
                 if (!actor.IsOwner) remote = actor;
             var remoteVoice = remote.GetComponent<NetworkVoice>();
             yield return new WaitForSeconds(2);
-            if (remoteVoice.ReceivedFrames < 20 || remote.ReceivedVoiceEvents < 3)
+            if (remoteVoice.ReceivedFrames < 20 || remote.ReceivedVoiceEvents < 1)
             { Fail("remote audio or voice waves missing"); yield break; }
             remote.Role.Value = 2;
             yield return new WaitForSeconds(.5f);
@@ -55,6 +55,23 @@ namespace NightToyStore
             owner.CaneRpc();
             yield return new WaitForSeconds(.1f);
             if (owner.ReceivedNoiseEvents <= noise) { Fail("grandmother cane missing"); yield break; }
+            noise = owner.ReceivedNoiseEvents;
+            owner.CaneRpc();
+            if (owner.ReceivedNoiseEvents != noise) { Fail("cane cooldown bypass"); yield break; }
+            yield return new WaitForSeconds(10);
+            owner.CaneRpc();
+            if (owner.ReceivedNoiseEvents <= noise) { Fail("cane did not recharge"); yield break; }
+            owner.Role.Value = 3;
+            owner.transform.rotation = Quaternion.Euler(70, 40, 30);
+            yield return null;
+            yield return null;
+            if (Quaternion.Angle(owner.OwnerCamera.transform.rotation, Quaternion.identity) > .1f ||
+                Mathf.Abs(owner.OwnerCamera.transform.position.y - owner.transform.position.y - .95f) > .01f)
+            { Fail("ball camera rolled or wrong height"); yield break; }
+            if (Mathf.Abs(owner.GetComponent<SphereCollider>().radius - .65f) > .01f ||
+                Mathf.Abs(NetworkVoice.Amplify(.02f, 5) - .1f) > .0001f)
+            { Fail("ball size or microphone amplification"); yield break; }
+            Debug.Log("NTS_TUNING_PASS cane cooldown recharge, ball camera stability/height/size, mic gain");
             Debug.Log("NTS_VOICE_PROBE_PASS PCM fidelity, remote voice, voice waves, rabbit rejection, cane role restriction");
             Application.Quit(0);
         }

@@ -14,6 +14,10 @@ namespace NightToyStore
         public bool Muted { get; private set; }
         public string Status { get; private set; } = "Microphone starting";
         public float InputLevel { get; private set; }
+        public float MicGain { get; private set; } = 1;
+        public float ListeningVolume { get; private set; } = 1;
+        public float DetectionThreshold { get; private set; } = .01f;
+        public static float Amplify(float sample, float gain) => Mathf.Clamp(sample * gain, -1, 1);
         public int RelayedFrames { get; private set; }
         public int ReceivedFrames { get; private set; }
         public int RejectedRabbitFrames { get; private set; }
@@ -28,7 +32,7 @@ namespace NightToyStore
         readonly object audioLock = new object();
         bool ready, automated, receivedSequence;
         uint sequence, lastSequence;
-        float nextVoicePulse, uploadCreditTime, uploadCredits = 5, voiceUntil;
+        float lastLoudFrame = -10, uploadCreditTime, uploadCredits = 5, voiceUntil;
 
         void Awake()
         {
@@ -38,7 +42,8 @@ namespace NightToyStore
             output.loop = true;
             output.spatialBlend = 1;
             output.minDistance = 1;
-            output.maxDistance = 18;
+            output.maxDistance = EchoVision.VoiceRange;
+            output.rolloffMode = AudioRolloffMode.Linear;
         }
 
         public override void OnNetworkSpawn()
@@ -50,6 +55,9 @@ namespace NightToyStore
             player.Role.OnValueChanged += RoleChanged;
             if (IsOwner)
             {
+                MicGain = Mathf.Clamp(PlayerPrefs.GetFloat("PrototypeMicGain", 1), 1, 10);
+                ListeningVolume = Mathf.Clamp01(PlayerPrefs.GetFloat("PrototypeVoiceVolume", 1));
+                DetectionThreshold = Mathf.Clamp(PlayerPrefs.GetFloat("PrototypeVoiceThreshold", .01f), .001f, .05f);
                 Mode = (VoiceInputMode)Mathf.Clamp(PlayerPrefs.GetInt("PrototypeVoiceMode", 1), 0, 1);
                 if (!automated && player.Role.Value != 2) StartCapture();
             }
@@ -110,10 +118,10 @@ namespace NightToyStore
                         float value = 0;
                         for (int channel = 0; channel < capture.channels; channel++)
                             value += microphoneFrame[source * capture.channels + channel];
-                        mono[i] = value / capture.channels;
+                        mono[i] = Amplify(value / capture.channels, MicGain);
                     }
                     InputLevel = Rms(mono);
-                    if (InputLevel > .01f) voiceUntil = Time.unscaledTime + .15f;
+                    if (InputLevel > DetectionThreshold) voiceUntil = Time.unscaledTime + .15f;
                     bool send = Mode == VoiceInputMode.Automatic ? Time.unscaledTime < voiceUntil :
                         Application.isFocused && Input.GetKey(KeyCode.V);
                     if (send) UploadRpc(Encode(mono), ++sequence);
@@ -128,7 +136,7 @@ namespace NightToyStore
                 var listener = manager.LocalClient.PlayerObject.GetComponent<NetworkToyPlayer>();
                 bool radio = listener.Role.Value == 0;
                 output.spatialBlend = radio ? 0 : 1;
-                output.volume = player.Role.Value == 2 || (radio && !listener.ReceivesRadioSignal) ? 0 : 1;
+                output.volume = player.Role.Value == 2 || (radio && !listener.ReceivesRadioSignal) ? 0 : listener.GetComponent<NetworkVoice>().ListeningVolume;
             }
         }
 
@@ -171,10 +179,12 @@ namespace NightToyStore
             float level = Rms(Decode(frame));
             RelayedFrames++;
             RelayRpc(frame, frameSequence);
-            if (level > .008f && Time.unscaledTime > nextVoicePulse)
+            if (level > .008f)
             {
-                nextVoicePulse = Time.unscaledTime + .18f;
-                float mouthHeight = player.Role.Value == 3 ? .3f : 1.2f;
+                bool beginning = Time.unscaledTime - lastLoudFrame > .35f;
+                lastLoudFrame = Time.unscaledTime;
+                if (!beginning) return;
+                float mouthHeight = player.Role.Value == 3 ? NetworkToyPlayer.ViewHeight(3) : 1.2f;
                 player.NoiseRpc(transform.position + Vector3.up * mouthHeight,
                     (int)EchoSoundKind.Voice, Mathf.Clamp(level * 12, .3f, 1));
             }
@@ -236,7 +246,7 @@ namespace NightToyStore
         void OnGUI()
         {
             if (!IsSpawned || !IsOwner) return;
-            GUI.Box(new Rect(12, 200, 620, 96), "Voice settings — Esc releases cursor / M mutes microphone");
+            GUI.Box(new Rect(12, 200, 620, 192), "Voice settings — Esc releases cursor / M mutes microphone");
             GUI.enabled = Cursor.lockState != CursorLockMode.Locked;
             if (GUI.Button(new Rect(24, 227, 130, 25), "Automatic voice")) SetMode(VoiceInputMode.Automatic);
             if (GUI.Button(new Rect(164, 227, 130, 25), "Hold V to talk")) SetMode(VoiceInputMode.HoldToTalk);
@@ -248,6 +258,19 @@ namespace NightToyStore
                 deviceIndex = devices.Length == 0 ? -1 : (deviceIndex + 1) % devices.Length;
                 device = deviceIndex < 0 ? null : devices[deviceIndex];
                 if (!Muted && player.Role.Value != 2 && !automated) StartCapture();
+            }
+            float gain = GUI.HorizontalSlider(new Rect(200, 298, 300, 20), MicGain, 1, 10);
+            float volume = GUI.HorizontalSlider(new Rect(200, 326, 300, 20), ListeningVolume, 0, 1);
+            float threshold = GUI.HorizontalSlider(new Rect(200, 354, 300, 20), DetectionThreshold, .001f, .05f);
+            GUI.Label(new Rect(24, 294, 180, 24), $"Mic gain: {gain:F1}x");
+            GUI.Label(new Rect(24, 322, 180, 24), $"Voice volume: {volume * 100:F0}%");
+            GUI.Label(new Rect(24, 350, 180, 24), $"Detection: {threshold:F3}");
+            if (gain != MicGain || volume != ListeningVolume || threshold != DetectionThreshold)
+            {
+                MicGain = gain; ListeningVolume = volume; DetectionThreshold = threshold;
+                PlayerPrefs.SetFloat("PrototypeMicGain", gain);
+                PlayerPrefs.SetFloat("PrototypeVoiceVolume", volume);
+                PlayerPrefs.SetFloat("PrototypeVoiceThreshold", threshold);
             }
             GUI.enabled = true;
             string state = player.Role.Value == 2 ? "Rabbit cannot speak" : Muted ? "Muted" : Status;

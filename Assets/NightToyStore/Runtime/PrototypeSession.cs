@@ -91,14 +91,19 @@ namespace NightToyStore
         {
             bool ownsPlayer = Manager.LocalClient != null && Manager.LocalClient.PlayerObject != null;
             lobbyCamera.enabled = !ownsPlayer;
-            if (!echoPrepared && echoCapture != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > 2.5)
+            if (!echoPrepared && echoCapture != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > (echoCapture == "foot" ? 2.8 : 2.5))
             {
                 echoPrepared = true;
                 var actor = Manager.LocalClient.PlayerObject.GetComponent<NetworkToyPlayer>();
                 actor.Role.Value = 1;
                 if (echoCapture == "cane") actor.CaneRpc();
+                else if (echoCapture == "foot")
+                {
+                    actor.ApplyLookDelta(new Vector2(0, -20));
+                    actor.NoiseRpc(actor.transform.position + Vector3.up * .05f, (int)EchoSoundKind.Footstep, .22f);
+                }
                 else if (echoCapture == "voice")
-                    actor.NoiseRpc(actor.transform.position + new Vector3(0, 1, 3), (int)EchoSoundKind.Voice, 1);
+                    actor.NoiseRpc(actor.transform.position + new Vector3(0, 1, 2), (int)EchoSoundKind.Voice, 1);
             }
             if (!captureDone && capturePath != null && ownsPlayer && Time.realtimeSinceStartupAsDouble > 3)
             {
