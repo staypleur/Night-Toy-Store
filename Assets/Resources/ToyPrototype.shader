@@ -1,6 +1,6 @@
 Shader "NightToyStore/PrototypeSurface"
 {
-    Properties { _Color ("Color", Color) = (0.5,0.5,0.5,1) _TileFloor ("Tile Floor", Float) = 0 }
+    Properties { _Color ("Color", Color) = (0.5,0.5,0.5,1) _TileFloor ("Tile Floor", Float) = 0 _Emission ("Emission", Float) = 0 }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
@@ -15,6 +15,8 @@ Shader "NightToyStore/PrototypeSurface"
             float _EchoMode;
             float _TileFloor;
             float _MapPreview;
+            float _Emission;
+            float4 _DoorLightPosRange[6], _DoorLightDirOn[6];
             v2f vert(appdata_base v) {
                 v2f o; o.pos = UnityObjectToClipPos(v.vertex);
                 o.normal = UnityObjectToWorldNormal(v.normal);
@@ -24,6 +26,14 @@ Shader "NightToyStore/PrototypeSurface"
                 if (_EchoMode > .5) discard;
                 float lighting = .35 + .65 * saturate(dot(normalize(i.normal), normalize(float3(.4,.8,-.3))));
                 lighting=lerp(lighting,1,_MapPreview);
+                float entranceLight=0;
+                for(int k=0;k<6;k++) {
+                    float3 fromLight=i.world-_DoorLightPosRange[k].xyz;
+                    float cone=saturate((dot(fromLight/max(.001,length(fromLight)),_DoorLightDirOn[k].xyz)-.8)/.1);
+                    float falloff=saturate(1-length(fromLight)/max(1,_DoorLightPosRange[k].w));
+                    entranceLight=max(entranceLight,cone*falloff*_DoorLightDirOn[k].w*3);
+                }
+                lighting=lerp(lighting,1,_Emission)+entranceLight;
                 float grid = step(.96, frac(i.world.x)) + step(.96, frac(i.world.z));
                 float tiles = fmod(abs(floor(i.world.x) + floor(i.world.z)),2);
                 float pattern = lerp(1,lerp(.28,1,tiles),_TileFloor);

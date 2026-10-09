@@ -20,7 +20,7 @@ namespace NightToyStore
                     Vector3 center=new Vector3((first+x)*.5f,-.25f,z+.5f);
                     var floor=Block("Worn tile floor",center,new Vector3(x-first,.5f,1),new Color(.29f,.31f,.28f));
                     floor.GetComponent<Renderer>().sharedMaterial.SetFloat("_TileFloor",1);
-                    Block("Ceiling",center+Vector3.up*3.95f,new Vector3(x-first,.15f,1),new Color(.07f,.075f,.065f));
+                    Block("Ceiling",center+Vector3.up*(RoomHeight+.325f),new Vector3(x-first,.15f,1),new Color(.07f,.075f,.065f));
                 }
             }
             foreach(var tile in plan.Tiles)
@@ -28,8 +28,8 @@ namespace NightToyStore
                 foreach(var direction in new[]{Vector2Int.left,Vector2Int.right,Vector2Int.up,Vector2Int.down})
                 {
                     if(plan.Tiles.Contains(tile+direction)) continue;
-                    var center=new Vector3(tile.x+.5f+direction.x*.5f,1.8f,tile.y+.5f+direction.y*.5f);
-                    Block("Exterior wall",center,direction.x!=0?new Vector3(.22f,3.6f,1):new Vector3(1,3.6f,.22f),new Color(.22f,.2f,.16f));
+                    var center=new Vector3(tile.x+.5f+direction.x*.5f,RoomHeight/2,tile.y+.5f+direction.y*.5f);
+                    Block("Exterior wall",center,direction.x!=0?new Vector3(.22f,RoomHeight,1):new Vector3(1,RoomHeight,.22f),new Color(.22f,.2f,.16f));
                 }
             }
             foreach(var room in plan.Rooms)
@@ -46,7 +46,7 @@ namespace NightToyStore
                         root.transform.position=corner+new Vector3(0,.4f,-.32f);Digit(root.transform,room.breaker,Vector3.zero);
                     }
                 }
-                Block("Old ceiling lamp",room.Center+Vector3.up*3.55f,new Vector3(1.5f,.08f,.28f),new Color(.66f,.58f,.4f),false);
+                Block("Old ceiling lamp",room.Center+Vector3.up*(RoomHeight-.15f),new Vector3(1.5f,.08f,.28f),new Color(.66f,.58f,.4f),false);
             }
         }
         void FixedControlRoom(FixedStorePlan.Room room)
@@ -57,13 +57,13 @@ namespace NightToyStore
             foreach(int side in new[]{-1,1})
             {
                 float wallX=center.x+side*5;
-                Block("Control front/back wall",center+new Vector3(0,1.8f,side*5),new Vector3(10,3.6f,.22f),wallColor);
+                Block("Control front/back wall",center+new Vector3(0,RoomHeight/2,side*5),new Vector3(10,RoomHeight,.22f),wallColor);
                 // Side wall: window [-2,0], door [0,2]; both face the same corridor.
                 foreach(var span in new[]{new Vector2(-5,-2),new Vector2(2,5)})
-                    Block("Control side wall",new Vector3(wallX,1.8f,center.z+(span.x+span.y)*.5f),new Vector3(.22f,3.6f,span.y-span.x),wallColor);
-                Block("Door lintel",new Vector3(wallX,3.2f,center.z+1),new Vector3(.22f,.8f,2),wallColor);
+                    Block("Control side wall",new Vector3(wallX,RoomHeight/2,center.z+(span.x+span.y)*.5f),new Vector3(.22f,RoomHeight,span.y-span.x),wallColor);
+                Block("Door lintel",new Vector3(wallX,(RoomHeight+2.8f)/2,center.z+1),new Vector3(.22f,RoomHeight-2.8f,2),wallColor);
                 Block("Window sill",new Vector3(wallX,.4f,center.z-1),new Vector3(.22f,.8f,2),wallColor);
-                Block("Window header",new Vector3(wallX,3.05f,center.z-1),new Vector3(.22f,1.1f,2),wallColor);
+                Block("Window header",new Vector3(wallX,(RoomHeight+2.5f)/2,center.z-1),new Vector3(.22f,RoomHeight-2.5f,2),wallColor);
                 // Invisible glass collider lets players look through but prevents stepping/jumping through.
                 var glass=new GameObject("Control room window glass");glass.transform.SetParent(geometry.transform,false);
                 glass.transform.position=new Vector3(wallX,1.65f,center.z-1);
@@ -80,14 +80,15 @@ namespace NightToyStore
                 }
             }
             Block("CCTV desk 7m",center+new Vector3(0,1,-4.4f),new Vector3(7,.18f,1),new Color(.3f,.2f,.12f));
-            for(int i=-1;i<=1;i++)
-            {
-                Block("Monitor casing",center+new Vector3(i*2.3f,1.65f,-4.6f),new Vector3(2.15f,1.1f,.18f),new Color(.055f,.065f,.06f),false);
-                Block("CCTV decoration",center+new Vector3(i*2.3f,1.65f,-4.49f),new Vector3(1.98f,.92f,.025f),new Color(.12f,.3f,.23f),false);
-            }
-            Block("Chalkboard 6m",center+new Vector3(0,2,4.8f),new Vector3(6,1.5f,.1f),new Color(.055f,.12f,.08f),false);
-            Block("Chair seat",center+new Vector3(0,.55f,-2.9f),new Vector3(.8f,.18f,.8f),new Color(.24f,.16f,.1f));
+            Block("Single CCTV screen casing 7m",center+new Vector3(0,2.65f,-4.6f),new Vector3(7,3.15f,.18f),new Color(.055f,.065f,.06f),false);
+            var screen=Block("CCTV placeholder (feed deferred)",center+new Vector3(0,2.65f,-4.49f),new Vector3(6.76f,2.91f,.025f),new Color(.055f,.16f,.13f),false);
+            var screenMaterial=PrototypeMaterials.Create(new Color(.055f,.16f,.13f));screenMaterial.SetFloat("_Emission",.6f);materials.Add(screenMaterial);screen.GetComponent<Renderer>().sharedMaterial=screenMaterial;
+            var board=Block("Chalkboard 6m",center+new Vector3(0,2.1f,4.8f),new Vector3(6,1.8f,.1f),new Color(.055f,.12f,.08f));
+            AddRoomTarget(board,room.control,RoomAction.Board);
+            var seat=Block("Chair seat",center+new Vector3(0,.55f,-2.9f),new Vector3(.8f,.18f,.8f),new Color(.24f,.16f,.1f));
+            AddRoomTarget(seat,room.control,RoomAction.Seat);
             Block("Chair back",center+new Vector3(0,.95f,-2.5f),new Vector3(.8f,.8f,.12f),new Color(.24f,.16f,.1f));
+            BuildRoomControls(room.control,center);
         }
         void DrawFixedMap()
         {

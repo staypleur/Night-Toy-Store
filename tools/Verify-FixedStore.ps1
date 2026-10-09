@@ -1,7 +1,7 @@
 param([string]$Executable, [int]$Seed = 12345, [switch]$SharedKeys)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-08\NightToyStore.exe' }
+if (-not $Executable) { $Executable = Join-Path $projectRoot 'Builds\NetworkTest-09\NightToyStore.exe' }
 $testProcesses = @()
 $keyFlag = if ($SharedKeys) { ' -nts-shared-keys' } else { '' }
 try {

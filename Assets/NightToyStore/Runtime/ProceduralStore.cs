@@ -22,6 +22,7 @@ namespace NightToyStore
             if(geometry!=null) Destroy(geometry);
             foreach(var material in materials) Destroy(material);
             materials.Clear();materialCache.Clear();doors.Clear();keys.Clear();
+            ResetRoomVisuals();
             Layout=new StoreLayout(seed,System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-nts-store-test")<0);
             geometry=new GameObject("Modular toy store / seed "+seed);
             geometry.transform.SetParent(transform,false);
@@ -138,12 +139,12 @@ namespace NightToyStore
         }
         public bool DoorBlocked(int room) => doors.TryGetValue(room,out var roomDoors) && roomDoors.Exists(door=>door.activeSelf);
         public bool KeyVisible(int room) => keys.TryGetValue(room,out var key) && key.activeSelf;
-        void Update() { if(Input.GetKeyDown(KeyCode.F2)) showMap=!showMap; }
+        void Update() { if(Input.GetKeyDown(KeyCode.F2)) showMap=!showMap;if(Layout!=null && Layout.IsFixed) UpdateRoomLights(); }
         void OnGUI()
         {
             if(Layout==null) return;
             GUI.Box(new Rect(12,402,620,62),$"TEST MAP / {(Layout.IsFixed?"fixed sketch":"modular")} / seed {Layout.Seed} / start control room {Layout.StartRoom}");
-            GUI.Label(new Rect(24,429,590,24),"E: nearby key / unlock control room. F2: test floor plan. CCTV/board: decoration.");
+            GUI.Label(new Rect(24,429,590,24),"E: interact / keys. F2: floor plan. Chair, door switches and markers are usable.");
             if(!showMap) return;
             if(Layout.IsFixed) { DrawFixedMap();return; }
             float x=Screen.width-330;
@@ -164,6 +165,6 @@ namespace NightToyStore
                     new Rect(p.x-3,Mathf.Min(p.y,q.y)+38,6,14),Texture2D.whiteTexture);
             }
         }
-        void OnDestroy() { if(Instance==this) Instance=null;foreach(var material in materials) Destroy(material); }
+        void OnDestroy() { if(Instance==this) Instance=null;foreach(var material in materials) Destroy(material);Shader.SetGlobalVectorArray("_DoorLightDirOn",new Vector4[6]); }
     }
 }

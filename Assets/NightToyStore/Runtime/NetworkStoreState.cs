@@ -41,6 +41,7 @@ namespace NightToyStore
         void Update()
         {
             if(!IsSpawned || !IsOwner || Seed.Value==0 || !Application.isFocused) return;
+            var control=GetComponent<NetworkControlRoom>();if(control!=null && control.ConsumesInteractInput) return;
             if(Input.GetKeyDown(KeyCode.E)) { int target=NearestInteraction();if(target!=0) InteractRpc(target); }
         }
         public int NearestInteraction()

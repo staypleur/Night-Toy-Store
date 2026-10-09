@@ -92,6 +92,7 @@ namespace NightToyStore
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
             if (physicsTest && Manager.IsHost) gameObject.AddComponent<PrototypePhysicsProbe>();
             if (Array.IndexOf(args, "-nts-jump-test") >= 0) gameObject.AddComponent<PrototypeJumpProbe>();
+            if (Array.IndexOf(args, "-nts-room-test") >= 0) gameObject.AddComponent<PrototypeRoomProbe>();
             if (Array.IndexOf(args, "-nts-voice-test") >= 0) gameObject.AddComponent<PrototypeVoiceProbe>();
             if (Array.IndexOf(args, "-nts-store-test") >= 0) gameObject.AddComponent<PrototypeStoreProbe>();
             if (Array.IndexOf(args, "-nts-fixed-store-test") >= 0) gameObject.AddComponent<PrototypeStoreProbe>();
@@ -253,6 +254,26 @@ namespace NightToyStore
             {
                 camera.transform.position=ProceduralStore.Instance.Layout.ControlCenter(ProceduralStore.Instance.Layout.StartRoom)+new Vector3(0,2.2f,3.5f);
                 camera.transform.rotation=Quaternion.Euler(12,180,0);camera.fieldOfView=75;
+            }
+            if(UseProceduralStore && ProceduralStore.Instance.Layout.IsFixed && Array.IndexOf(Environment.GetCommandLineArgs(),"-nts-board-capture")>=0)
+            {
+                int room=ProceduralStore.Instance.Layout.StartRoom;
+                var world=NetworkControlRoom.World;
+                foreach(var pair in new[]{new[]{new Vector2(.2f,.2f),new Vector2(.8f,.8f)},new[]{new Vector2(.2f,.8f),new Vector2(.8f,.2f)}})
+                    world.Drawing.Add(new BoardSegment{Room=room,Owner=0,Stroke=(uint)(world.Drawing.Count+1),From=pair[0],To=pair[1]});
+                camera.transform.position=ProceduralStore.Instance.Layout.ControlCenter(room)+new Vector3(0,2,-1.5f);
+                camera.transform.rotation=Quaternion.identity;camera.fieldOfView=70;
+            }
+            if(UseProceduralStore && ProceduralStore.Instance.Layout.IsFixed && Array.IndexOf(Environment.GetCommandLineArgs(),"-nts-light-capture")>=0)
+            {
+                int room=ProceduralStore.Instance.Layout.StartRoom;
+                if(Array.IndexOf(Environment.GetCommandLineArgs(),"-nts-light-on")>=0)
+                {
+                    var world=NetworkControlRoom.World;var state=world.Rooms[room-1];state.LeftLightUntil=Manager.ServerTime.Time+2;world.Rooms[room-1]=state;
+                    ProceduralStore.Instance.SendMessage("UpdateRoomLights");
+                }
+                camera.transform.position=ProceduralStore.Instance.Layout.ControlCenter(room)+new Vector3(-3.8f,1.5f,1);
+                camera.transform.rotation=Quaternion.Euler(0,270,0);camera.fieldOfView=70;
             }
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-art-capture") >= 0)
             {

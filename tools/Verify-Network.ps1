@@ -2,7 +2,7 @@ param([string]$Executable)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $Executable) {
-    $Executable = Join-Path $projectRoot 'Builds\NetworkTest-08\NightToyStore.exe'
+    $Executable = Join-Path $projectRoot 'Builds\NetworkTest-09\NightToyStore.exe'
 }
 if (-not (Test-Path -LiteralPath $Executable)) { throw "Build not found: $Executable" }
 $logsRoot = Join-Path $projectRoot 'Logs'

@@ -51,7 +51,7 @@ namespace NightToyStore
             string[] args = Environment.GetCommandLineArgs();
             automated = Array.IndexOf(args, "-nts-test") >= 0 ||
                 Array.IndexOf(args, "-nts-physics-test") >= 0 ||
-                Array.IndexOf(args, "-nts-voice-test") >= 0 || Array.IndexOf(args, "-nts-jump-test") >= 0 || Array.IndexOf(args, "-nts-store-test") >= 0 || Array.IndexOf(args, "-nts-fixed-store-test") >= 0 || Array.IndexOf(args, "-nts-capture") >= 0;
+                Array.IndexOf(args, "-nts-voice-test") >= 0 || Array.IndexOf(args, "-nts-room-test") >= 0 || Array.IndexOf(args, "-nts-jump-test") >= 0 || Array.IndexOf(args, "-nts-store-test") >= 0 || Array.IndexOf(args, "-nts-fixed-store-test") >= 0 || Array.IndexOf(args, "-nts-capture") >= 0;
             player.Role.OnValueChanged += RoleChanged;
             if (IsOwner)
             {

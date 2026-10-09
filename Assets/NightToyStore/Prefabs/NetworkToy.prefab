@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 465134502326271819}
   - component: {fileID: 8353835998569308022}
   - component: {fileID: 7012267131264557763}
+  - component: {fileID: 8778443006000823710}
   m_Layer: 0
   m_Name: NetworkToy
   m_TagString: Untagged
@@ -224,3 +225,24 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::NightToyStore.NetworkVoice
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &8778443006000823710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4554808207598391085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45387459261a25b48a6165997e14a847, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::NightToyStore.NetworkControlRoom
+  ShowTopMostFoldoutHeaderGroup: 1
+  Rooms:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+  Drawing:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0

@@ -30,6 +30,8 @@ namespace NightToyStore
         public int BodyPushCount { get; private set; }
         public Vector2 PhysicsTestInput { get; set; }
         bool physicsAutomated;
+        public bool IsAutomated=>automated;
+        public NetworkControlRoom RoomControl=>GetComponent<NetworkControlRoom>();
         Vector3 desiredMovementVelocity;
         float nextCane, footstepDistance;
         public bool ReceivesRadioSignal => Mathf.Abs(tunedFrequency - SignalFrequency.Value) < 2;
@@ -96,7 +98,7 @@ namespace NightToyStore
                 automated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-test") >= 0;
                 physicsAutomated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-physics-test") >= 0;
                 automated |= physicsAutomated;
-                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-fixed-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-jump-test") >= 0)
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-room-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-fixed-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-jump-test") >= 0)
                 { automated = true; physicsAutomated = true; }
                 wantsMouseLook = !automated && Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-capture") < 0;
                 if (wantsMouseLook && Application.isFocused) CaptureMouse();
@@ -156,9 +158,10 @@ namespace NightToyStore
                 var guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
                 bool clickingVoiceSettings = Cursor.lockState != CursorLockMode.Locked &&
                     new Rect(12, 200, 620, 192).Contains(guiMouse);
-                if (Input.GetMouseButtonDown(0) && !automated && !clickingVoiceSettings)
+                bool boardOpen=RoomControl!=null && RoomControl.BoardFocus.Value;
+                if (Input.GetMouseButtonDown(0) && !automated && !clickingVoiceSettings && !boardOpen)
                 { wantsMouseLook = true; CaptureMouse(); }
-                if (Application.isFocused && Cursor.lockState == CursorLockMode.Locked)
+                if (Application.isFocused && Cursor.lockState == CursorLockMode.Locked && !boardOpen)
                     ApplyLookDelta(new Vector2(Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y")));
                 view.transform.rotation = Quaternion.Euler(pitch, yaw, 0);
                 if (Time.time >= nextSend)
@@ -180,6 +183,7 @@ namespace NightToyStore
         void SimulateServerMovement()
         {
             if (!IsServer || Role.Value == 3) return;
+            if(RoomControl!=null && RoomControl.MovementBlocked) { movement=Vector2.zero;running=false;jumpPending=false;desiredMovementVelocity=Vector3.zero;return; }
             if (Captured.Value) { movement = Vector2.zero; running = false; jumpPending = false; }
             if (Role.Value == 0 && (signalTimer -= Time.fixedDeltaTime) <= 0)
             {
@@ -218,7 +222,7 @@ namespace NightToyStore
         [Rpc(SendTo.Server, RequireOwnership = true)]
         public void JumpRpc()
         {
-            if (Role.Value == 3 || Captured.Value || !controller.enabled || !controller.isGrounded || verticalSpeed > 0) return;
+            if (Role.Value == 3 || Captured.Value || (RoomControl!=null && RoomControl.MovementBlocked) || !controller.enabled || !controller.isGrounded || verticalSpeed > 0) return;
             jumpPending = true;
         }
 
@@ -227,6 +231,7 @@ namespace NightToyStore
         {
             if (!IsSpawned || !IsServer || Captured.Value || (HasInfiniteHealth && !instantKill)) return false;
             Captured.Value = true;
+            if(RoomControl!=null) RoomControl.ReleaseTools();
             PermanentDeath.Value = preventsRevival;
             movement = Vector2.zero;
             running = false;
@@ -277,6 +282,7 @@ namespace NightToyStore
 
         void ResetRole(int role)
         {
+            if(RoomControl!=null) RoomControl.ReleaseTools();
             if (!body.isKinematic) { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
             movement = Vector2.zero;
             verticalSpeed = 0;
@@ -293,6 +299,23 @@ namespace NightToyStore
             yaw += delta.x * 2;
             pitch = Mathf.Clamp(pitch - delta.y * 2, -85, 85);
             if (view != null) view.transform.rotation = Quaternion.Euler(pitch, yaw, 0);
+        }
+
+        public void MoveToSeat(Vector3 position,bool seated)
+        {
+            if(!IsServer) return;
+            controller.enabled=false;body.position=position;
+            GetComponent<NetworkTransform>().Teleport(position,Quaternion.identity,Vector3.one);
+            verticalSpeed=0;movement=Vector2.zero;running=false;jumpPending=false;
+            Physics.SyncTransforms();controller.enabled=!seated && Role.Value!=3;
+        }
+        [Rpc(SendTo.Owner)]
+        public void FaceConsoleRpc() { yaw=180;pitch=0; }
+        public void SetInteractionCursor(bool open)
+        {
+            wantsMouseLook=!open;
+            if(open) { Cursor.lockState=CursorLockMode.None;Cursor.visible=true; }
+            else if(Application.isFocused && !automated) CaptureMouse();
         }
 
         void CaptureMouse()
