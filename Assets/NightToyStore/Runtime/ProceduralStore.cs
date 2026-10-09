@@ -3,13 +3,14 @@ using UnityEngine;
 
 namespace NightToyStore
 {
-    public sealed class ProceduralStore : MonoBehaviour
+    public sealed partial class ProceduralStore : MonoBehaviour
     {
         public static ProceduralStore Instance { get; private set; }
         public StoreLayout Layout { get; private set; }
-        readonly Dictionary<int,GameObject> doors=new Dictionary<int,GameObject>();
+        readonly Dictionary<int,List<GameObject>> doors=new Dictionary<int,List<GameObject>>();
         readonly Dictionary<int,GameObject> keys=new Dictionary<int,GameObject>();
         readonly List<Material> materials=new List<Material>();
+        readonly Dictionary<Color,Material> materialCache=new Dictionary<Color,Material>();
         GameObject geometry;
         bool showMap;
         public int Unlocked { get; private set; }
@@ -20,10 +21,12 @@ namespace NightToyStore
             if(seed==0 || Layout!=null && Layout.Seed==seed) return;
             if(geometry!=null) Destroy(geometry);
             foreach(var material in materials) Destroy(material);
-            materials.Clear();doors.Clear();keys.Clear();
-            Layout=new StoreLayout(seed);
+            materials.Clear();materialCache.Clear();doors.Clear();keys.Clear();
+            Layout=new StoreLayout(seed,System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-nts-store-test")<0);
             geometry=new GameObject("Modular toy store / seed "+seed);
             geometry.transform.SetParent(transform,false);
+            if(Layout.IsFixed) BuildFixedGeometry();
+            else {
             var floor=Block("Worn tile floor",new Vector3(0,-.25f,0),new Vector3(24,.5f,24),new Color(.29f,.31f,.28f));
             floor.GetComponent<Renderer>().sharedMaterial.SetFloat("_TileFloor",1);
             for(int cell=0;cell<9;cell++)
@@ -40,6 +43,7 @@ namespace NightToyStore
                 Block("Old ceiling lamp",center+new Vector3(0,3.6f,0),new Vector3(1.5f,.08f,.28f),new Color(.66f,.58f,.4f),false);
                 if(room>0) ControlRoom(center,room);
                 else PublicRoom(center,Layout.Themes[cell]);
+            }
             }
             for(int room=1;room<=3;room++)
             {
@@ -70,7 +74,7 @@ namespace NightToyStore
             {
                 var door=Block("Locked control room "+room,center+Vector3.up*1.4f,
                     horizontal?new Vector3(StoreLayout.DoorWidth,2.8f,.15f):new Vector3(.15f,2.8f,StoreLayout.DoorWidth),new Color(.26f,.32f,.29f));
-                doors[room]=door;
+                doors[room]=new List<GameObject>{door};
                 var sign=new GameObject("Room number");sign.transform.SetParent(geometry.transform,false);
                 sign.transform.position=center+Vector3.up*2.2f;
                 sign.transform.rotation=Quaternion.Euler(0,horizontal?0:90,0);
@@ -110,7 +114,8 @@ namespace NightToyStore
         {
             var block=GameObject.CreatePrimitive(PrimitiveType.Cube);block.name=name;
             block.transform.SetParent(geometry.transform,false);block.transform.position=position;block.transform.localScale=scale;
-            var material=PrototypeMaterials.Create(color);materials.Add(material);block.GetComponent<Renderer>().sharedMaterial=material;
+            if(!materialCache.TryGetValue(color,out var material)) { material=PrototypeMaterials.Create(color);materialCache[color]=material;materials.Add(material); }
+            block.GetComponent<Renderer>().sharedMaterial=material;
             if(!collider) { block.GetComponent<Collider>().enabled=false;Destroy(block.GetComponent<Collider>()); }
             return block;
         }
@@ -128,18 +133,19 @@ namespace NightToyStore
         public void Apply(int unlocked,int picked)
         {
             Unlocked=unlocked;Picked=picked;
-            foreach(var pair in doors) pair.Value.SetActive((unlocked & 1<<(pair.Key-1))==0);
+            foreach(var pair in doors) foreach(var door in pair.Value) door.SetActive((unlocked & 1<<(pair.Key-1))==0);
             foreach(var pair in keys) pair.Value.SetActive((picked & 1<<(pair.Key-1))==0);
         }
-        public bool DoorBlocked(int room) => doors.TryGetValue(room,out var door) && door.activeSelf;
+        public bool DoorBlocked(int room) => doors.TryGetValue(room,out var roomDoors) && roomDoors.Exists(door=>door.activeSelf);
         public bool KeyVisible(int room) => keys.TryGetValue(room,out var key) && key.activeSelf;
         void Update() { if(Input.GetKeyDown(KeyCode.F2)) showMap=!showMap; }
         void OnGUI()
         {
             if(Layout==null) return;
-            GUI.Box(new Rect(12,402,620,62),$"TEST MAP / seed {Layout.Seed} / start control room {Layout.StartRoom}");
+            GUI.Box(new Rect(12,402,620,62),$"TEST MAP / {(Layout.IsFixed?"fixed sketch":"modular")} / seed {Layout.Seed} / start control room {Layout.StartRoom}");
             GUI.Label(new Rect(24,429,590,24),"E: nearby key / unlock control room. F2: test floor plan. CCTV/board: decoration.");
             if(!showMap) return;
+            if(Layout.IsFixed) { DrawFixedMap();return; }
             float x=Screen.width-330;
             GUI.Box(new Rect(x,12,316,334),"TEST FLOOR PLAN");
             for(int cell=0;cell<9;cell++)

@@ -17,7 +17,7 @@ namespace NightToyStore
             get {
                 string[] flags = Environment.GetCommandLineArgs();
                 return Array.IndexOf(flags,"-nts-test")<0 && Array.IndexOf(flags,"-nts-physics-test")<0 &&
-                    Array.IndexOf(flags,"-nts-voice-test")<0 && Array.IndexOf(flags,"-nts-art-capture")<0 && Array.IndexOf(flags,"-nts-echo-capture")<0;
+                    Array.IndexOf(flags,"-nts-voice-test")<0 && Array.IndexOf(flags,"-nts-jump-test")<0 && Array.IndexOf(flags,"-nts-art-capture")<0 && Array.IndexOf(flags,"-nts-echo-capture")<0;
             }
         }
         string address = "127.0.0.1";
@@ -91,8 +91,10 @@ namespace NightToyStore
             if (Array.IndexOf(args, "-nts-host") >= 0) Connect(true);
             else if (Array.IndexOf(args, "-nts-client") >= 0) Connect(false);
             if (physicsTest && Manager.IsHost) gameObject.AddComponent<PrototypePhysicsProbe>();
+            if (Array.IndexOf(args, "-nts-jump-test") >= 0) gameObject.AddComponent<PrototypeJumpProbe>();
             if (Array.IndexOf(args, "-nts-voice-test") >= 0) gameObject.AddComponent<PrototypeVoiceProbe>();
             if (Array.IndexOf(args, "-nts-store-test") >= 0) gameObject.AddComponent<PrototypeStoreProbe>();
+            if (Array.IndexOf(args, "-nts-fixed-store-test") >= 0) gameObject.AddComponent<PrototypeStoreProbe>();
             deadline = Time.realtimeSinceStartupAsDouble + 35;
         }
 
@@ -242,10 +244,15 @@ namespace NightToyStore
             {
                 foreach(var renderer in ProceduralStore.Instance.GetComponentsInChildren<Renderer>())
                     if(renderer.gameObject.name=="Ceiling") renderer.enabled=false;
-                camera.transform.position=new Vector3(0,30,0);camera.transform.rotation=Quaternion.Euler(90,0,0);
-                camera.orthographic=true;camera.orthographicSize=14;
+                camera.transform.position=ProceduralStore.Instance.Layout.IsFixed?new Vector3(2,55,0):new Vector3(0,30,0);camera.transform.rotation=Quaternion.Euler(90,0,0);
+                camera.orthographic=true;camera.orthographicSize=ProceduralStore.Instance.Layout.IsFixed?44:14;
                 Shader.SetGlobalFloat("_MapPreview",1);
                 System.IO.File.WriteAllText(capturePath+".json",ProceduralStore.Instance.Layout.ToJson());
+            }
+            if(UseProceduralStore && ProceduralStore.Instance.Layout.IsFixed && Array.IndexOf(Environment.GetCommandLineArgs(),"-nts-room-capture")>=0)
+            {
+                camera.transform.position=ProceduralStore.Instance.Layout.ControlCenter(ProceduralStore.Instance.Layout.StartRoom)+new Vector3(0,2.2f,3.5f);
+                camera.transform.rotation=Quaternion.Euler(12,180,0);camera.fieldOfView=75;
             }
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-art-capture") >= 0)
             {

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="820" viewBox="0 0 900 820">
+  <rect width="900" height="820" fill="#151c20"/>
+  <g font-family="Malgun Gothic, sans-serif" fill="#e9e9de">
+    <text x="60" y="48" font-size="25">Night Toy Store · 관제실 평면 기준</text>
+    <text x="60" y="80" font-size="16">사용자 그림 기준 · 가로 치수 확정 · 높이와 세부 위치는 미정</text>
+    <rect x="180" y="150" width="500" height="500" fill="#242e30" stroke="#a9b4a6" stroke-width="6"/>
+    <path d="M180 310V410 M680 310V410" stroke="#242e30" stroke-width="10"/>
+    <path d="M180 310V410 M680 310V410" stroke="#e8b86c" stroke-width="5" stroke-dasharray="8 4"/>
+    <path d="M180 410V510 M680 410V510" stroke="#70b7cf" stroke-width="6"/>
+    <rect x="280" y="154" width="300" height="35" fill="#285146" stroke="#86ae97"/>
+    <text x="430" y="179" text-anchor="middle" font-size="18">칠판 · 가로 6m</text>
+    <rect x="255" y="602" width="350" height="45" fill="#354347" stroke="#8aabb0"/>
+    <text x="430" y="631" text-anchor="middle" font-size="18">CCTV 구역 · 가로 7m</text>
+    <circle cx="430" cy="535" r="20" fill="#614a34" stroke="#c8ae80"/>
+    <text x="430" y="541" text-anchor="middle" font-size="14">의자</text>
+    <circle cx="192" cy="300" r="12" fill="#bd847e"/>
+    <circle cx="668" cy="300" r="12" fill="#bd847e"/>
+    <text x="65" y="300" font-size="16">카메라</text>
+    <text x="707" y="300" font-size="16">카메라</text>
+    <text x="67" y="365" font-size="18">문 · 2m</text>
+    <text x="707" y="365" font-size="18">문 · 2m</text>
+    <text x="50" y="465" font-size="18">창문 · 2m</text>
+    <text x="707" y="465" font-size="18">창문 · 2m</text>
+    <path d="M180 119H680 M180 111V127 M680 111V127" stroke="#a9b4a6" fill="none"/>
+    <text x="430" y="112" text-anchor="middle" font-size="18">10m</text>
+    <path d="M145 150V650 M137 150H153 M137 650H153" stroke="#a9b4a6" fill="none"/>
+    <text x="130" y="550" text-anchor="end" font-size="18">10m</text>
+    <text x="60" y="716" font-size="17">좌우 문 옆 카메라 / 문 아래 창문 / 맞은편 칠판과 CCTV</text>
+    <text x="60" y="749" font-size="16">두꺼비집: 각 관제실 번호에 대응하는 외부 정전 수리 위치</text>
+    <text x="60" y="778" font-size="15" fill="#b2bcb7">이 도면은 확정된 배치 기록이며, CCTV·문 방어·수리 기능 구현을 뜻하지 않음.</text>
+  </g>
+</svg>

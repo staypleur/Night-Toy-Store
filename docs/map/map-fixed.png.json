@@ -1,0 +1,494 @@
+{
+    "version": "fixed-sketch-v1",
+    "seed": 12345,
+    "startRoom": 1,
+    "rooms": [
+        {
+            "name": "Main hall",
+            "label": "메인홀",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 15.0,
+                "y": -20.0,
+                "width": 24.0,
+                "height": 24.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Sub hall",
+            "label": "서브홀",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -28.0,
+                "y": 11.0,
+                "width": 16.0,
+                "height": 14.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Large party room 1",
+            "label": "파티룸 대형1",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -48.0,
+                "y": 1.0,
+                "width": 18.0,
+                "height": 10.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Kitchen",
+            "label": "부엌",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 21.0,
+                "y": 11.0,
+                "width": 14.0,
+                "height": 14.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Storage 1",
+            "label": "창고 1",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 43.0,
+                "y": -34.0,
+                "width": 8.0,
+                "height": 8.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Storage 2",
+            "label": "창고 2",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -47.0,
+                "y": 20.0,
+                "width": 8.0,
+                "height": 8.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Doll room",
+            "label": "인형방",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -23.0,
+                "y": 30.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Chess room",
+            "label": "체스방",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 10.0,
+                "y": 31.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Lego room",
+            "label": "레고방",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -12.0,
+                "y": -6.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Party room 1",
+            "label": "파티룸1",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 3.0,
+                "y": -6.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Party room 2",
+            "label": "파티룸2",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 44.0,
+                "y": -3.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Nursery",
+            "label": "유아방",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 3.0,
+                "y": -33.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Junction A",
+            "label": "분기 A",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -45.0,
+                "y": -33.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Junction B",
+            "label": "분기 B",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -45.0,
+                "y": -15.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Junction C",
+            "label": "분기 C",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -23.0,
+                "y": -15.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Junction D",
+            "label": "분기 D",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -13.0,
+                "y": -33.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 0
+        },
+        {
+            "name": "Control 1",
+            "label": "관제실 1",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -4.0,
+                "y": 1.0,
+                "width": 10.0,
+                "height": 10.0
+            },
+            "control": 1,
+            "breaker": 0
+        },
+        {
+            "name": "Control 2",
+            "label": "관제실 2",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 40.0,
+                "y": 13.0,
+                "width": 10.0,
+                "height": 10.0
+            },
+            "control": 2,
+            "breaker": 0
+        },
+        {
+            "name": "Control 3",
+            "label": "관제실 3",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -35.0,
+                "y": -35.0,
+                "width": 10.0,
+                "height": 10.0
+            },
+            "control": 3,
+            "breaker": 0
+        },
+        {
+            "name": "Breaker 1",
+            "label": "관제실 1 두꺼비집",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 5.0,
+                "y": -23.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 1
+        },
+        {
+            "name": "Breaker 2",
+            "label": "관제실 2 두꺼비집",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": -32.0,
+                "y": -23.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 2
+        },
+        {
+            "name": "Breaker 3",
+            "label": "관제실 3 두꺼비집",
+            "bounds": {
+                "serializedVersion": "2",
+                "x": 10.0,
+                "y": 23.0,
+                "width": 6.0,
+                "height": 6.0
+            },
+            "control": 0,
+            "breaker": 3
+        }
+    ],
+    "corridors": [
+        {
+            "serializedVersion": "2",
+            "x": -44.0,
+            "y": -32.0,
+            "width": 4.0,
+            "height": 22.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -44.0,
+            "y": -14.0,
+            "width": 4.0,
+            "height": 22.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -44.0,
+            "y": -14.0,
+            "width": 26.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -44.0,
+            "y": -32.0,
+            "width": 36.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -22.0,
+            "y": -14.0,
+            "width": 4.0,
+            "height": 34.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -22.0,
+            "y": 4.0,
+            "width": 52.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -22.0,
+            "y": -14.0,
+            "width": 39.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -12.0,
+            "y": -32.0,
+            "width": 4.0,
+            "height": 22.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -31.0,
+            "y": -22.0,
+            "width": 4.0,
+            "height": 12.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -11.0,
+            "y": -14.0,
+            "width": 4.0,
+            "height": 13.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 4.0,
+            "y": -14.0,
+            "width": 4.0,
+            "height": 13.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 6.0,
+            "y": -22.0,
+            "width": 4.0,
+            "height": 12.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 4.0,
+            "y": -32.0,
+            "width": 45.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 25.0,
+            "y": -32.0,
+            "width": 4.0,
+            "height": 26.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -22.0,
+            "y": 16.0,
+            "width": 52.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -22.0,
+            "y": 16.0,
+            "width": 4.0,
+            "height": 19.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -45.0,
+            "y": 22.0,
+            "width": 13.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -36.0,
+            "y": 16.0,
+            "width": 4.0,
+            "height": 10.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": -36.0,
+            "y": 16.0,
+            "width": 18.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 26.0,
+            "y": 4.0,
+            "width": 4.0,
+            "height": 16.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 11.0,
+            "y": 16.0,
+            "width": 4.0,
+            "height": 12.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 26.0,
+            "y": 16.0,
+            "width": 30.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 26.0,
+            "y": 16.0,
+            "width": 4.0,
+            "height": 20.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 11.0,
+            "y": 32.0,
+            "width": 45.0,
+            "height": 4.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 52.0,
+            "y": -2.0,
+            "width": 4.0,
+            "height": 38.0
+        },
+        {
+            "serializedVersion": "2",
+            "x": 25.0,
+            "y": -2.0,
+            "width": 31.0,
+            "height": 4.0
+        }
+    ],
+    "keys": [
+        {
+            "x": -39.0,
+            "y": 0.0,
+            "z": 6.0
+        },
+        {
+            "x": 27.0,
+            "y": 0.0,
+            "z": -8.0
+        },
+        {
+            "x": 28.0,
+            "y": 0.0,
+            "z": 18.0
+        }
+    ]
+}

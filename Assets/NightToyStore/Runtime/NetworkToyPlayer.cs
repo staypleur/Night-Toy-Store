@@ -38,6 +38,18 @@ namespace NightToyStore
         public const float BallRadius = .65f;
         public readonly NetworkVariable<float> LookHeading = new NetworkVariable<float>(0);
         public readonly NetworkVariable<float> CaneReadyAt = new NetworkVariable<float>(0);
+        public readonly NetworkVariable<bool> Captured = new NetworkVariable<bool>(false);
+        public readonly NetworkVariable<bool> PermanentDeath = new NetworkVariable<bool>(false);
+        public bool HasInfiniteHealth => Role.Value == (int)ToyRole.TennisBall;
+        public int AcceptedJumps { get; private set; }
+        bool jumpPending;
+        public int TestObserverEvidence { get; private set; }
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void ReportJumpTestRpc(int evidence)
+        {
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-jump-test") >= 0)
+                TestObserverEvidence |= evidence & 31;
+        }
         public int ReceivedNoiseEvents { get; private set; }
         public int ReceivedVoiceEvents { get; private set; }
         public int ReceivedFootstepEvents { get; private set; }
@@ -84,7 +96,7 @@ namespace NightToyStore
                 automated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-test") >= 0;
                 physicsAutomated = Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-physics-test") >= 0;
                 automated |= physicsAutomated;
-                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-store-test") >= 0)
+                if (Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-voice-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-fixed-store-test") >= 0 || Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-jump-test") >= 0)
                 { automated = true; physicsAutomated = true; }
                 wantsMouseLook = !automated && Array.IndexOf(Environment.GetCommandLineArgs(), "-nts-capture") < 0;
                 if (wantsMouseLook && Application.isFocused) CaptureMouse();
@@ -156,7 +168,8 @@ namespace NightToyStore
                     InputRpc(input, yaw, !automated && Input.GetKey(KeyCode.LeftShift));
                     nextSend = Time.time + .05f;
                 }
-                if (Role.Value == 1 && Input.GetKeyDown(KeyCode.Space)) CaneRpc();
+                if (!automated && Application.isFocused && Input.GetKeyDown(KeyCode.Space)) JumpRpc();
+                if (!automated && Application.isFocused && Role.Value == 1 && Input.GetKeyDown(KeyCode.Q)) CaneRpc();
                 if (Role.Value == 0)
                     tunedFrequency = Mathf.Clamp(tunedFrequency + Input.mouseScrollDelta.y * 2, 0, 100);
                 for (int i = 0; i < 4; i++)
@@ -167,6 +180,7 @@ namespace NightToyStore
         void SimulateServerMovement()
         {
             if (!IsServer || Role.Value == 3) return;
+            if (Captured.Value) { movement = Vector2.zero; running = false; jumpPending = false; }
             if (Role.Value == 0 && (signalTimer -= Time.fixedDeltaTime) <= 0)
             {
                 SignalFrequency.Value = UnityEngine.Random.Range(0f, 100f);
@@ -176,6 +190,15 @@ namespace NightToyStore
             bool sprint = running && movement.sqrMagnitude > 0 && Stamina.Value > 0;
             Stamina.Value = Mathf.Clamp(Stamina.Value + (sprint ? -25 : 15) * Time.fixedDeltaTime, 0, 100);
             if (controller.isGrounded && verticalSpeed < 0) verticalSpeed = -2;
+            if (jumpPending)
+            {
+                if (controller.isGrounded && !Captured.Value)
+                {
+                    verticalSpeed = Mathf.Sqrt(-2 * Physics.gravity.y * 1f); // Provisional 1m jump height.
+                    AcceptedJumps++;
+                }
+                jumpPending = false;
+            }
             verticalSpeed += Physics.gravity.y * Time.fixedDeltaTime;
             float speed = Role.Value == 2 ? 4 : Role.Value == 0 ? 3.4f : 2.8f;
             var delta = Quaternion.Euler(0, serverYaw, 0) * new Vector3(movement.x, 0, movement.y);
@@ -184,7 +207,7 @@ namespace NightToyStore
             controller.Move((desiredMovementVelocity + Vector3.up * verticalSpeed) * Time.fixedDeltaTime);
             var traveled = transform.position - previousPosition;
             traveled.y = 0;
-            footstepDistance += traveled.magnitude;
+            if (controller.isGrounded) footstepDistance += traveled.magnitude;
             if (footstepDistance >= 3f && controller.isGrounded)
             {
                 footstepDistance -= 3f;
@@ -193,9 +216,28 @@ namespace NightToyStore
         }
 
         [Rpc(SendTo.Server, RequireOwnership = true)]
+        public void JumpRpc()
+        {
+            if (Role.Value == 3 || Captured.Value || !controller.enabled || !controller.isGrounded || verticalSpeed > 0) return;
+            jumpPending = true;
+        }
+
+        // Monster AI calls this on the server. Instant death and revival eligibility are independent.
+        public bool TryCapture(bool instantKill, bool preventsRevival = false)
+        {
+            if (!IsSpawned || !IsServer || Captured.Value || (HasInfiniteHealth && !instantKill)) return false;
+            Captured.Value = true;
+            PermanentDeath.Value = preventsRevival;
+            movement = Vector2.zero;
+            running = false;
+            jumpPending = false;
+            return true;
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
         public void CaneRpc()
         {
-            if (Role.Value != 1 || Time.time < nextCane) return;
+            if (Captured.Value || Role.Value != 1 || Time.time < nextCane) return;
             nextCane = Time.time + 10;
             CaneReadyAt.Value = (float)NetworkManager.ServerTime.Time + 10;
             NoiseRpc(transform.position + Vector3.up * .05f, (int)EchoSoundKind.Cane, 1);
@@ -214,6 +256,7 @@ namespace NightToyStore
         void InputRpc(Vector2 input, float heading, bool sprint)
         {
             if (!float.IsFinite(input.x) || !float.IsFinite(input.y) || !float.IsFinite(heading)) return;
+            if (Captured.Value) { movement = Vector2.zero; running = false; return; }
             movement = Vector2.ClampMagnitude(input, 1);
             serverYaw = heading;
             LookHeading.Value = heading;
@@ -238,6 +281,9 @@ namespace NightToyStore
             movement = Vector2.zero;
             verticalSpeed = 0;
             running = false;
+            jumpPending = false;
+            Captured.Value = false; // Debug role switching starts a fresh test character.
+            PermanentDeath.Value = false;
             Stamina.Value = 100;
             Role.Value = role;
         }
@@ -333,11 +379,12 @@ namespace NightToyStore
         {
             if (!IsSpawned || !IsOwner) return;
             GUI.Box(new Rect(12, 12, 620, 180), "Night Toy Store — NETWORK TEST");
-            GUI.Label(new Rect(24, 40, 530, 24), $"Role: {(ToyRole)Role.Value} | Stamina: {Stamina.Value:0}");
+            GUI.Label(new Rect(24, 40, 590, 24), $"Role: {(ToyRole)Role.Value} | Stamina: {Stamina.Value:0}" + (Captured.Value ? " | Captured" : ""));
             GUI.Label(new Rect(24, 64, 590, 24), "WASD / Shift run / walk into ball to push / Mouse look / Esc cursor");
-            GUI.Label(new Rect(24, 88, 590, 24), "Grandmother: Space cane pulse. Footsteps and voices reveal sound waves.");
+            GUI.Label(new Rect(24, 88, 590, 24), "Space: jump (except ball). Grandmother Q: cane. Sound reveals waves.");
             if (Role.Value == 1)
                 GUI.Label(new Rect(24, 112, 530, 24), $"Cane: {Mathf.Max(0, CaneReadyAt.Value - (float)NetworkManager.ServerTime.Time):F1}s until ready");
+            if (HasInfiniteHealth) GUI.Label(new Rect(24, 112, 590, 24), "HP: infinite. Ordinary attacks cannot kill the ball; instant kill can.");
             if (Role.Value == 0)
                 GUI.Label(new Rect(24, 112, 530, 24), $"Tune {tunedFrequency:0} / debug target {SignalFrequency.Value:0} / signal {Mathf.Abs(tunedFrequency - SignalFrequency.Value) < 2}");
             GUI.Label(new Rect(24, 140, 590, 24), "TEST: 1 Radio / 2 Grandmother / 3 Rabbit / 4 Ball (occupied roles swap)");

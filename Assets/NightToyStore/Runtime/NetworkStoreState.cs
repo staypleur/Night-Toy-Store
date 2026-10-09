@@ -15,7 +15,7 @@ namespace NightToyStore
         [Rpc(SendTo.Server,RequireOwnership=true)]
         public void ReportTestRpc(string fingerprint,int unlocked,int picked)
         {
-            if(System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-nts-store-test")<0) return;
+            if(System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-nts-store-test")<0 && System.Array.IndexOf(System.Environment.GetCommandLineArgs(),"-nts-fixed-store-test")<0) return;
             TestVerified=fingerprint==ProceduralStore.Instance.Layout.Fingerprint && unlocked==Session.StoreUnlocked && picked==Session.StorePicked;
         }
         PrototypeSession Session => Object.FindFirstObjectByType<PrototypeSession>();
@@ -52,7 +52,7 @@ namespace NightToyStore
                 if(map.KeyVisible(room))
                 { float d=HorizontalDistance(transform.position,map.Layout.Keys[room-1]);if(d<distance){distance=d;result=room;} }
                 if(map.DoorBlocked(room))
-                { float d=HorizontalDistance(transform.position,map.Layout.Door(room));if(d<distance){distance=d;result=-room;} }
+                { float d=HorizontalDistance(transform.position,map.Layout.NearestDoor(room,transform.position));if(d<distance){distance=d;result=-room;} }
             }
             return result;
         }
@@ -62,7 +62,7 @@ namespace NightToyStore
         {
             if(Seed.Value==0 || target==0 || target < -3 || target>3) { RejectedInteractions++;return; }
             var session=Session;var map=ProceduralStore.Instance;int room=Mathf.Abs(target),bit=1<<(room-1);
-            Vector3 destination=target>0?map.Layout.Keys[room-1]:map.Layout.Door(room);
+            Vector3 destination=target>0?map.Layout.Keys[room-1]:map.Layout.NearestDoor(room,transform.position);
             if(HorizontalDistance(transform.position,destination)>2.2f) { RejectedInteractions++;return; }
             if(target>0)
             {

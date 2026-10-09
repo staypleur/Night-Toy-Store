@@ -13,10 +13,20 @@ namespace NightToyStore
         public readonly Vector3[] Keys = new Vector3[3];
         public readonly List<int> Edges = new List<int>();
         public readonly int[] Themes = new int[9];
-        public StoreLayout(int seed)
+        public readonly FixedStorePlan Fixed;
+        public bool IsFixed => Fixed != null;
+        public StoreLayout(int seed,bool fixedMap=false)
         {
             Seed = seed;
             var random = new System.Random(seed);
+            if(fixedMap)
+            {
+                StartRoom=random.Next(1,4);
+                Fixed=new FixedStorePlan();
+                Keys[0]=new Vector3(-39,0,6);Keys[1]=new Vector3(27,0,-8);Keys[2]=new Vector3(28,0,18);
+                if(!Validate()) throw new InvalidOperationException("Invalid fixed store layout");
+                return;
+            }
             var corners = new List<int> { 0, 2, 6, 8 };
             Shuffle(corners, random);
             for(int i=0;i<3;i++) ControlCells[i]=corners[i];
@@ -67,15 +77,25 @@ namespace NightToyStore
         public bool Connected(int a,int b) => Edges.Contains(Edge(a,b));
         public int Room(int cell) => Array.IndexOf(ControlCells,cell)+1;
         public static Vector3 Center(int cell) => new Vector3((cell%3-1)*ModuleSize,0,(cell/3-1)*ModuleSize);
-        public Vector3 Spawn(int slot) => Center(ControlCells[StartRoom-1])+new Vector3((slot-1.5f)*1.6f,.08f,0);
+        public Vector3 ControlCenter(int room) => IsFixed?Fixed.Control(room).Center:Center(ControlCells[room-1]);
+        public Vector3 Spawn(int slot) => ControlCenter(StartRoom)+new Vector3((slot-1.5f)*1.6f,.08f,0);
+        public Vector3[] Doors(int room) => IsFixed?Fixed.Doors(room):new[]{Door(room)};
+        public Vector3 NearestDoor(int room,Vector3 position)
+        {
+            Vector3 result=Door(room);float best=float.MaxValue;
+            foreach(var door in Doors(room)) { var delta=door-position;delta.y=0;if(delta.sqrMagnitude<best){best=delta.sqrMagnitude;result=door;} }
+            return result;
+        }
         public Vector3 Door(int room)
         {
+            if(IsFixed) return Fixed.Doors(room)[0];
             int cell=ControlCells[room-1];
             foreach(int other in Neighbors(cell)) if(Connected(cell,other)) return (Center(cell)+Center(other))*.5f;
             throw new InvalidOperationException("Room without doorway");
         }
         public bool Validate()
         {
+            if(IsFixed) return Fixed.Validate(StartRoom,Keys);
             if(DoorWidth < NetworkToyPlayer.BallRadius*2+.5f) return false;
             var reached=new HashSet<int>();var queue=new Queue<int>();
             queue.Enqueue(ControlCells[StartRoom-1]);
@@ -101,11 +121,11 @@ namespace NightToyStore
             foreach(int other in Neighbors(cell)) if(Connected(cell,other)) return other;
             return -1;
         }
-        public string Fingerprint => Seed+":"+StartRoom+":"+string.Join(",",ControlCells)+":"+string.Join(",",Edges)+":"+string.Join(",",Themes);
+        public string Fingerprint => IsFixed?Seed+":"+StartRoom+":"+Fixed.GeometryFingerprint:Seed+":"+StartRoom+":"+string.Join(",",ControlCells)+":"+string.Join(",",Edges)+":"+string.Join(",",Themes);
         [Serializable] sealed class ExportData
         {
             public int seed,startRoom;public int[] controlCells,edges,themes;public Vector3[] keys;
         }
-        public string ToJson() => JsonUtility.ToJson(new ExportData {seed=Seed,startRoom=StartRoom,controlCells=ControlCells,edges=Edges.ToArray(),themes=Themes,keys=Keys},true);
+        public string ToJson() => IsFixed?Fixed.ToJson(Seed,StartRoom,Keys):JsonUtility.ToJson(new ExportData {seed=Seed,startRoom=StartRoom,controlCells=ControlCells,edges=Edges.ToArray(),themes=Themes,keys=Keys},true);
     }
 }
